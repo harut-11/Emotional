@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>感情アーカイブ - 感情周期グラフ</title>
+    <!-- style.cssを読み込み -->
+    <link rel="stylesheet" href="static\style.css">
+    <!-- Chart.jsを読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>感情周期グラフ</h1>
+        <p>過去の感情の推移を可視化。未来の「感情の天気予報」に役立てましょう。</p>
+        
+        <div class="tabs">
+            <button class="tab-btn" data-target="post-history">投稿</button>
+            <button class="tab-btn active" data-target="analysis-chart">分析</button>
+        </div>
+        <div class="tab-content-container">
+            <div id="analysis-chart" class="tab-content active">
+                <div class="chart-container">
+                    <canvas id="emotionChart"></canvas>
+                </div>
+                
+                <div class="data-input">
+                    <h2>新しい感情の記録</h2>
+                    
+                    <form id="emotionForm" class="record-form">
+                        <textarea id="textContent" placeholder="今日の出来事や気分をテキストで記録（例：今日は寝坊した）" rows="4"></textarea>
+                        
+                        <div class="file-input-group">
+                            <label for="fileInput">写真を添付</label>
+                            <input type="file" id="fileInput" name="file" accept="image/*">
+                        </div>
+
+                        <button type="submit" id="submitBtn">感情を分析して記録する</button>
+                    </form>
+                    
+                    <div id="messageArea" class="message-area"></div>
+                </div>
+            </div>
+
+            <div id="post-history" class="tab-content">
+                <h2>投稿履歴</h2>
+                <div id="historyList">
+                    <p id="noHistoryMessage" style="text-align: center; color: #7f8c8d; padding: 20px; display: none;">まだ投稿がありません。</p>
+                </div>
+            </div>
+        </div>
+        </div>
+
+    <!-- script.jsを読み込み -->
+    <script src="static\script.js"></script>
+</body>
+</html>
