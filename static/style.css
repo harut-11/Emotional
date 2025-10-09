@@ -128,7 +128,7 @@ h2 {
 }
 
 /* タブボタンの基本スタイル */
-.tab-btn {
+.tabButton {
     padding: 10px 20px;
     margin: 0 5px;
     background-color: transparent;
@@ -142,7 +142,7 @@ h2 {
 }
 
 /* アクティブなタブボタンのスタイル */
-.tab-btn.active {
+.tabButton.active {
     color: #3498db; /* アクティブ時の色 */
     border-bottom: 3px solid #3498db; /* アクティブ時の下線 */
 }
