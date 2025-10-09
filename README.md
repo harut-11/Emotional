@@ -8,6 +8,7 @@
 - パソコン(Windows, macOS)
 - Google Chrome
 - Visual Studio Code(推奨エディタ) → Visual Studio Codeが未インストールの場合は、[こちら](https://code.visualstudio.com/download)
+- Python
 
 ### 手順
 
@@ -18,7 +19,7 @@
     cd あなたのリポジトリ名
     ```
 
-2.  **仮想環境構築の仕方**
+2.  **仮想環境の構築**
 
     仮想環境を作成
     ```bash
@@ -30,7 +31,7 @@
     venv\Scripts\activate
     ```
     
-    仮想環境から抜ける(VsCodeを閉じるとき)
+    仮想環境を終了する(作業を終えてVS Codeなどを閉じるときは、以下のコマンドを実行して仮想環境から抜けてください。)
     ```bash
     deactivate
     ```
@@ -45,23 +46,18 @@
     `.env.example`を参考に、プロジェクトのルートディレクトリに`.env`ファイルを作成し、APIキーなどの環境変数を設定してください。
 
     ```
-    GEMINI_API_KEY=あなたのAPIキー
+    GEMINI_API_KEY=あなたのGemini APIキー
     ```
 
 4. **必要なパッケージをインストール**
 
    ```bash
-   pip install Flask google-genai Pillow
-   ```
-
-   **データベース操作ライブラリ**
-   ```bash
-   pip install python-dotenv Flask-SQLAlchemy
+   pip install Flask google-genai Pillow python-dotenv Flask-SQLAlchemy flask-cors
    ```
    
 5.  **アプリケーションの起動**
 
-    以下のコマンドでアプリケーションを起動します。
+    以下のコマンドを実行してアプリケーションを起動します。
 
     ```bash
     python app.py
