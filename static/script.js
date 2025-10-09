@@ -1,11 +1,11 @@
 const API_HISTORY_URL = '/emotion_history'; // 履歴取得API
 const API_ANALYZE_URL = '/analyze_emotion'; // 分析・記録API
-// HTML要素の取得
-const emotionForm = document.getElementById('emotionForm');
-const submitBtn = document.getElementById('submitBtn');
+
+const emotionForm = document.getElementById('emotionForm');     
+const submitBtn = document.getElementById('submitBtn');     
 const messageArea = document.getElementById('messageArea'); 
 const historyList = document.getElementById('historyList'); 
-const tabButtons = document.querySelectorAll('.tab-btn');   
+const tabButtons = document.querySelectorAll('.tabButton');   
 const noHistoryMessage = document.getElementById('noHistoryMessage'); 
 
 // グローバルなチャートインスタンスを保持するための変数
@@ -13,8 +13,8 @@ let emotionChartInstance = null;
 
 /**
  * メッセージエリアにフィードバックを表示する関数
- * @param {string} type - 'success' または 'error'
- * @param {string} message - 表示するメッセージ
+ * @param {string} type  
+ * @param {string} message 
  */
 function showMessage(type, message) {
     messageArea.textContent = message;
@@ -47,7 +47,7 @@ async function fetchEmotionData() {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        // response.json() は { status: "success", data: [...] } の形式を想定
+        
         const result = await response.json(); 
         return result.data; 
     } catch (error) {
@@ -70,7 +70,7 @@ function drawEmotionChart(records) {
     
     // グラフのラベル（日付）とデータセット（幸福度、怒り）を準備
     const labels = records.map(record => {
-        // 日付文字列を整形して表示 (例: 10/08 15:30)
+        // 日付文字列を整形して表示
         const date = new Date(record.created_at);
         return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     });
@@ -151,7 +151,7 @@ emotionForm.addEventListener('submit', async (e) => {
         
         // テキストコンテンツを追加
         if (textContent) {
-            // バックエンド (app.py) の 'textContent' とキー名を合わせる
+           
             formData.append('textContent', textContent);
         }
 
@@ -162,7 +162,7 @@ emotionForm.addEventListener('submit', async (e) => {
 
         const response = await fetch(API_ANALYZE_URL, {
             method: 'POST',
-            body: formData, // FormDataを直接渡すと、適切なContent-Typeが設定されます
+            body: formData, 
         });
 
         const result = await response.json();
@@ -173,7 +173,7 @@ emotionForm.addEventListener('submit', async (e) => {
             // 成功したら、グラフを再読み込み
             await initApp();
             
-            // フォームをリセット (テキストエリアとファイル選択をクリア)
+            // フォームをリセット 
             emotionForm.reset();
         } else {
             // API側でエラーが返された場合
@@ -188,11 +188,12 @@ emotionForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- 【追加】履歴リスト表示関数 ---
+// --- 履歴リスト表示関数 ---
 /**
  * 感情レコードの配列からHTMLリストを生成し、表示する
  * @param {Array} records - データベースから取得した感情レコードの配列
  */
+
 function displayHistoryList(records) {
     historyList.innerHTML = ''; // 一旦リストをクリア
 
@@ -214,10 +215,10 @@ function displayHistoryList(records) {
         // 感情スコアを強調
         const scoreText = `幸福度: ${record.happiness}, 怒りレベル: ${record.anger}`;
         
-        // 【修正箇所】画像パスが存在する場合に、<img>タグを生成
+        // 画像パスが存在する場合に、<img>タグを生成
         let imageHtml = '';
         if (record.image_path) {
-            // app.pyで定義した新しい画像配信エンドポイント '/images/ファイル名' を使用
+         
             const imageUrl = `/images/${record.image_path}`; 
             imageHtml = `
                 <div class="history-item-image-container">
@@ -239,22 +240,22 @@ function displayHistoryList(records) {
 }
 
 
-// --- 【追加】タブ切り替えロジック ---
+// --- タブ切り替えロジック ---
 tabButtons.forEach(button => {
     button.addEventListener('click', async () => {
         const targetId = button.getAttribute('data-target');
         
-        // 1. 全てのタブボタンから 'active' クラスを削除し、クリックされたボタンに付与
+
         tabButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
         
-        // 2. 全てのコンテンツを非表示にし、ターゲットのコンテンツを表示
+        // 全てのコンテンツを非表示にし、ターゲットのコンテンツを表示
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
         document.getElementById(targetId).classList.add('active');
         
-        // 3. 投稿履歴タブがクリックされた場合、データを再取得して表示
+        // 投稿履歴タブがクリックされた場合、データを再取得して表示
         if (targetId === 'post-history') {
             const records = await fetchEmotionData();
             displayHistoryList(records);
@@ -262,9 +263,7 @@ tabButtons.forEach(button => {
         
         // 4. 分析(グラフ)タブがクリックされた場合、データが既にあればグラフを再描画
         if (targetId === 'analysis-chart') {
-             // グラフはinitAppで既に描画されている前提だが、念のため。
-             // Chart.jsは非表示のコンテナ内で初期化すると描画が崩れるため、
-             // タブを切り替えた後にグラフを再描画することが推奨されます。
+ 
              await initApp(); 
         }
     });
@@ -278,7 +277,7 @@ async function initApp() {
     // データがあればグラフを描画
     if (records && records.length > 0) {
         drawEmotionChart(records);
-        // データが存在する場合はメッセージをクリア（初期メッセージと競合しないように）
+        // データが存在する場合はメッセージをクリア
         if (messageArea.textContent === 'まだデータがありません。今日の感情を記録してみましょう！') {
              messageArea.textContent = '';
              messageArea.className = 'message-area';
