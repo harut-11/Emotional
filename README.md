@@ -31,7 +31,7 @@
     venv\Scripts\activate
     ```
     
-    仮想環境から抜ける
+    仮想環境から抜ける(VsCodeを閉じるとき)
     ```bash
     deactivate
     ```
