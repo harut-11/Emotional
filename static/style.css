@@ -79,7 +79,7 @@ h2 {
 }
 
 /* 送信ボタン */
-#submitBtn {
+#submitButton {
     padding: 12px 20px;
     background-color: #2ecc71; /* 緑色 */
     color: white;
@@ -91,11 +91,11 @@ h2 {
     transition: background-color 0.3s ease;
 }
 
-#submitBtn:hover {
+#submitButton:hover {
     background-color: #27ae60;
 }
 
-#submitBtn:disabled {
+#submitButton:disabled {
     background-color: #bdc3c7;
     cursor: not-allowed;
 }
