@@ -2,7 +2,7 @@ const API_HISTORY_URL = '/emotion_history'; // 履歴取得API
 const API_ANALYZE_URL = '/analyze_emotion'; // 分析・記録API
 
 const emotionForm = document.getElementById('emotionForm');     
-const submitBtn = document.getElementById('submitBtn');     
+const submitButton = document.getElementById('submitButton');     
 const messageArea = document.getElementById('messageArea'); 
 const historyList = document.getElementById('historyList'); 
 const tabButtons = document.querySelectorAll('.tabButton');   
@@ -26,8 +26,8 @@ function showMessage(type, message) {
  * @param {boolean} isSubmitting
  */
 function setFormSubmitting(isSubmitting) {
-    submitBtn.disabled = isSubmitting;
-    submitBtn.textContent = isSubmitting ? '分析中...' : '感情を記録・分析';
+    submitButton.disabled = isSubmitting;
+    submitButton.textContent = isSubmitting ? '分析中...' : '感情を記録・分析';
 }
 
 /**
