@@ -224,3 +224,76 @@ h2 {
 .history-image:hover {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
+
+
+/* レスポンシブ対応 (768px以下) */
+@media (max-width: 768px) {
+    /* 1. 全体設定の調整 */
+    body {
+        /* スマートフォンでは上部の余白を少し減らす */
+        padding-top: 20px;
+    }
+
+    /* .container の調整 */
+    .container {
+        /* スマホで横いっぱいに見せるため、左右の影を抑える */
+        box-shadow: none;
+        padding: 15px; /* 内部のパディングを減らす */
+        width: 100%; /* 念のため100%に設定 */
+        border-radius: 0; /* 角丸をなくして全画面に馴染ませる */
+    }
+
+    /* 2. フォーム要素の調整 */
+    .record-form {
+        gap: 10px; /* フォームの要素間の間隔を少し減らす */
+    }
+    
+    /* ファイル入力グループを縦に並べる（画面が小さい場合） */
+    .file-input-group {
+        flex-direction: column; /* 縦並びにする */
+        align-items: flex-start; /* 左寄せにする */
+        gap: 5px;
+    }
+
+    /* 送信ボタンのフォントサイズを調整 */
+    #submitButton {
+        font-size: 16px;
+        padding: 10px 15px;
+    }
+
+    /* 3. タブの調整 */
+    .tabs {
+        /* 横幅が狭い場合は中央寄せを解除し、要素を詰め気味にする */
+        justify-content: space-around;
+        margin-bottom: 10px;
+    }
+
+    .tabButton {
+        padding: 8px 10px; /* タブボタンのパディングを減らす */
+        font-size: 16px; /* フォントサイズを調整 */
+    }
+
+    /* 4. 履歴一覧の調整 */
+    .history-item {
+        padding: 10px; /* 履歴アイテムのパディングを減らす */
+        margin-bottom: 10px;
+    }
+
+    .history-item-meta {
+        /* 投稿日時とファイル名を縦に並べる、またはレイアウト調整 */
+        flex-direction: column; 
+        gap: 5px;
+    }
+
+    /* 添付画像があったときのコンテナ調整 */
+    .history-item-image-container {
+        margin-top: 10px;
+    }
+
+    /* 画像サイズの調整 */
+    .history-image {
+        /* スマホでは画面いっぱいに広げ、横スクロールを防ぐ */
+        max-width: 100%; 
+        max-height: 200px; /* 高さを調整 */
+    }
+}
