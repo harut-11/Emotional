@@ -49,7 +49,8 @@ async function fetchEmotionData() {
         }
         
         const result = await response.json(); 
-        return result.data; 
+        // 🚨 修正: app.pyのget_emotion_historyエンドポイントが返す構造に合わせて修正
+        return result.records; 
     } catch (error) {
         console.error("感情履歴の取得に失敗しました:", error);
         // ユーザーにメッセージを表示する
@@ -168,7 +169,18 @@ emotionForm.addEventListener('submit', async (e) => {
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-            showMessage('success', `感情を記録しました！幸福度: ${result.emotion_data.happiness}, 怒りレベル: ${result.emotion_data.anger}`);
+            
+            // ▼ 修正開始：Twitter投稿ステータスの確認 ▼
+            let successMessage = `感情を記録しました！幸福度: ${result.emotion_data.happiness}, 怒りレベル: ${result.emotion_data.anger}`;
+            
+            if (result.twitter_posted === true) {
+                successMessage += '。Twitterへの自動投稿も成功しました！';
+            } else if (result.twitter_posted === false) {
+                 successMessage += '。Twitter投稿は失敗したか、連携されていません。';
+            }
+            // ▲ 修正終了 ▲
+            
+            showMessage('success', successMessage);
             
             // 成功したら、グラフを再読み込み
             await initApp();
@@ -219,7 +231,8 @@ function displayHistoryList(records) {
         let imageHtml = '';
         if (record.image_path) {
          
-            const imageUrl = `/images/${record.image_path}`; 
+            // const imageUrl = `/images/${record.image_path}`; 
+            const imageUrl = record.image_path; 
             imageHtml = `
                 <div class="history-item-image-container">
                     <img src="${imageUrl}" alt="記録された画像" class="history-image">
