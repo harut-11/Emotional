@@ -41,14 +41,8 @@
     以下のURLからGemini API キーを作成してください。
 
     [Gemini API キーの作成](https://ai.google.dev/gemini-api/docs?hl=)
-3.  **.envファイルの設定**
 
-    `.env.example`を参考に、プロジェクトのルートディレクトリに`.env`ファイルを作成し、APIキーなどの環境変数を設定してください。
-
-    ```
-    GEMINI_API_KEY=あなたのGemini APIキー
-    ```
-4. **X API キーの作成と設定** 
+3. **X API キーの作成と設定** 
 
 プロジェクトで使用するX (Twitter) APIのキーを作成し、設定します。
 
@@ -72,21 +66,26 @@ http://127.0.0.1:5000/callback/twitter
 
 ⚠️ 重要: ここで表示される API Key と API Secret は、次のステップで利用するため、必ず控えておいてください。
 
-5. **.envファイルの設定**
+4. **.envファイルの設定**
    
-`.env.example`を参考に、プロジェクトのルートディレクトリに`.env`ファイルを作成し、APIキーなどの環境変数を設定してください。
+`.env.example`を参考に、プロジェクトのルートディレクトリに`.env`ファイルを作成し、取得したすべてのキーを設定してください。
+
 ```
+# Gemini APIキー
+GEMINI_API_KEY=あなたのGemini APIキー
+
+# X (Twitter) APIキー
 TWITTER_API_KEY=あなたのConsumer Key (API Key)
 TWITTER_API_SECRET=あなたのConsumer Secret (API Secret)
 ```
 
-6. **必要なパッケージをインストール**
+5. **必要なパッケージをインストール**
 
    ```bash
    pip install Flask google-genai Pillow python-dotenv Flask-SQLAlchemy flask-cors tweepy
    ```
    
-7.  **アプリケーションの起動**
+6.  **アプリケーションの起動**
 
     以下のコマンドを実行してアプリケーションを起動します。
 
