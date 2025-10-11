@@ -18,7 +18,7 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
 CORS_ORIGIN = os.getenv("CORS_ORIGIN", "http://127.0.0.1:5500")
 
-# --- Twitter設定 (要: .envファイルへの追加) ---
+# --- Twitter設定 ---
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
 TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
 # 開発環境のデフォルトURL
@@ -32,7 +32,6 @@ app = Flask(__name__, static_url_path='/static')
 # SQLiteを使用し、インスタンスフォルダにデータベースを作成
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///emotion_archive.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# セッション暗号化のための秘密鍵を設定
 app.secret_key = os.getenv("SECRET_KEY", "your_default_secret_key_if_not_set_in_env")
 
 # 画像ファイルの保存先
@@ -118,7 +117,7 @@ def twitter_callback():
         user = api.verify_credentials()
         screen_name = user.screen_name # ユーザーオブジェクトからscreen_nameを取得
 
-        # 4. DBにトークンを保存（既存レコードがあれば更新）
+        # 4. DBにトークンを保存
         auth_record = TwitterAuth.query.first()
         if not auth_record:
             auth_record = TwitterAuth(
@@ -265,7 +264,7 @@ def analyze_emotion():
                 auth.set_access_token(auth_record.access_token, auth_record.access_token_secret)
                 api_v1 = API(auth, wait_on_rate_limit=True) 
                 
-                # 5-2. 投稿文の作成 (既存コードを流用)
+                # 5-2. 投稿文の作成 
                 base_text = f"【感情記録】\n幸福度: {happiness:.1f} / 怒りレベル: {anger:.1f}\n"
                 # Twitterの文字数制限（280文字）を考慮してテキストを調整
                 hashtag_length = len("\n#感情アーカイブ #GeminiAPI")
@@ -348,4 +347,5 @@ if __name__ == '__main__':
         db.create_all()
         
     app.run(debug=True)
+
 
