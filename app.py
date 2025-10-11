@@ -3,14 +3,12 @@ import json
 import io
 import datetime
 import uuid
-# flask.session, flask.redirect, url_for, requestが追加
 from flask import Flask, request, jsonify, render_template, send_from_directory, session, redirect, url_for
 from dotenv import load_dotenv 
 from flask_sqlalchemy import SQLAlchemy
 from google import genai
 from PIL import Image
 from flask_cors import CORS
-# V2 API Client をインポートするために、Clientを追加
 from tweepy import OAuthHandler, API, Client 
 from sqlalchemy import func
 
@@ -62,7 +60,7 @@ class EmotionRecord(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
 
 class TwitterAuth(db.Model):
-    """Twitter認証情報を保持するモデル (簡略化のために1レコードのみ想定)"""
+
     id = db.Column(db.Integer, primary_key=True)
     screen_name = db.Column(db.String(50), nullable=False)
     access_token = db.Column(db.String(255), nullable=False)
@@ -112,8 +110,7 @@ def twitter_callback():
         # Access TokenとAccess Token Secretを取得
         token, token_secret = auth.get_access_token(verifier)
         
-        # 3. 【修正済み】V1.1 APIを使ってユーザー情報を取得し、screen_nameを取り出す
-        # 認証情報を使ってV1.1 APIクライアントを初期化
+
         auth.set_access_token(token, token_secret)
         api = API(auth, wait_on_rate_limit=True) 
         
@@ -296,7 +293,7 @@ def analyze_emotion():
                 print("Twitter（V2 Client）への自動投稿に成功しました。")
                 
             except Exception as e:
-                # 以前と同じようにエラーを出力
+    
                 print(f"Twitter投稿エラー（記録は成功）: {e}") 
         
         # 6. 成功レスポンス
@@ -320,7 +317,7 @@ def analyze_emotion():
 @app.route('/emotion_history', methods=['GET'])
 def get_emotion_history():
     """データベースに保存されている全ての感情履歴を取得するAPI"""
-    
+
     records = EmotionRecord.query.order_by(EmotionRecord.created_at.asc()).all()
     
     history = []
@@ -330,15 +327,13 @@ def get_emotion_history():
             'happiness': record.happiness,
             'anger': record.anger,
             'text_content': record.text_content,
-            # 🚨 修正: 画像パスをフロントエンドでアクセス可能なURL形式に変換（/images/filename）
             'image_path': f'/images/{record.image_path}' if record.image_path else None, 
             'created_at': record.created_at.strftime('%Y-%m-%d %H:%M:%S')
         })
     
     # 認証ステータスも取得
     auth_status = TwitterAuth.query.first() is not None
-    
-    # 🚨 修正: JSON構造を { "records": [...], "twitter_authenticated": ... } に変更
+
     return jsonify({
         "records": history,
         "twitter_authenticated": auth_status
@@ -353,3 +348,4 @@ if __name__ == '__main__':
         db.create_all()
         
     app.run(debug=True)
+
