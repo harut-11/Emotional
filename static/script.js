@@ -1,6 +1,5 @@
 const API_HISTORY_URL = '/emotion_history'; // 履歴取得API
 const API_ANALYZE_URL = '/analyze_emotion'; // 分析・記録API
-
 const emotionForm = document.getElementById('emotionForm');     
 const submitButton = document.getElementById('submitButton');     
 const messageArea = document.getElementById('messageArea'); 
@@ -49,7 +48,6 @@ async function fetchEmotionData() {
         }
         
         const result = await response.json(); 
-        // 🚨 修正: app.pyのget_emotion_historyエンドポイントが返す構造に合わせて修正
         return result.records; 
     } catch (error) {
         console.error("感情履歴の取得に失敗しました:", error);
@@ -64,7 +62,7 @@ async function fetchEmotionData() {
  * @param {Array} records - データベースから取得した感情レコードの配列
  */
 function drawEmotionChart(records) {
-    // 既存のチャートがあれば破棄し、重ねて描画されるのを防ぐ
+    
     if (emotionChartInstance) {
         emotionChartInstance.destroy();
     }
@@ -138,7 +136,7 @@ emotionForm.addEventListener('submit', async (e) => {
     const fileInput = document.getElementById('fileInput');
     const selectedFile = fileInput.files[0];
 
-    // テキストと画像のどちらも空の場合はエラー
+   
     if (!textContent && !selectedFile) {
         showMessage('error', 'テキストまたは写真を添付して感情を記録してください。');
         return;
@@ -170,7 +168,7 @@ emotionForm.addEventListener('submit', async (e) => {
 
         if (response.ok && result.status === 'success') {
             
-            // ▼ 修正開始：Twitter投稿ステータスの確認 ▼
+            
             let successMessage = `感情を記録しました！幸福度: ${result.emotion_data.happiness}, 怒りレベル: ${result.emotion_data.anger}`;
             
             if (result.twitter_posted === true) {
@@ -178,7 +176,7 @@ emotionForm.addEventListener('submit', async (e) => {
             } else if (result.twitter_posted === false) {
                  successMessage += '。Twitter投稿は失敗したか、連携されていません。';
             }
-            // ▲ 修正終了 ▲
+   
             
             showMessage('success', successMessage);
             
@@ -303,3 +301,4 @@ async function initApp() {
 
 // アプリケーションを起動
 initApp();
+
