@@ -52,7 +52,7 @@
 4. **必要なパッケージをインストール**
 
    ```bash
-   pip install Flask google-genai Pillow python-dotenv Flask-SQLAlchemy flask-cors
+   pip install Flask google-genai Pillow python-dotenv Flask-SQLAlchemy flask-cors tweepy
    ```
    
 5.  **アプリケーションの起動**
