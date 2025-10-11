@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>感情アーカイブ - 感情周期グラフ</title>
-    <!-- style.cssを読み込み -->
     <link rel="stylesheet" href="static\style.css">
-    <!-- Chart.jsを読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -27,6 +25,14 @@
                 <div class="data-input">
                     <h2>新しい感情の記録</h2>
                     
+                    <div class="twitter-auth-section">
+                        <p id="twitterAuthStatusMessage" class="auth-message">
+                            Twitterアカウントを連携すると、記録と同時に自動投稿されます。
+                        </p>
+                        <button type="button" id="twitterAuthButton" onclick="location.href='/auth/twitter';">
+                            Twitterアカウントを連携する
+                        </button>
+                    </div>
                     <form id="emotionForm" class="record-form">
                         <textarea id="textContent" placeholder="今日の出来事や気分をテキストで記録（例：今日は寝坊した）" rows="4"></textarea>
                         
@@ -51,7 +57,6 @@
         </div>
         </div>
 
-    <!-- script.jsを読み込み -->
     <script src="static\script.js"></script>
 </body>
 </html>
