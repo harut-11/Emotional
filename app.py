@@ -27,11 +27,12 @@ TWITTER_CALLBACK_URL = os.getenv("TWITTER_CALLBACK_URL", "http://127.0.0.1:5000/
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEYが.envファイルまたは環境変数に設定されていません。")
 
-# --- Flask & SQLAlchemy 設定 ---
+# --- FlaskとSQLAlchemy 設定 ---
 app = Flask(__name__, static_url_path='/static')
 # SQLiteを使用し、インスタンスフォルダにデータベースを作成
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///emotion_archive.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# セッション暗号化のための秘密鍵を設定
 app.secret_key = os.getenv("SECRET_KEY", "your_default_secret_key_if_not_set_in_env")
 
 # 画像ファイルの保存先
@@ -141,7 +142,7 @@ def twitter_callback():
         return render_template('error.html', message=f"Twitter認証情報の保存に失敗しました。{e}")
 
 
-# --- トップページ（認証状態の確認用） ---
+# --- トップページ ---
 @app.route('/')
 def index():
     """index.htmlをレンダリングし、Twitter認証状態を確認"""
@@ -221,7 +222,7 @@ def analyze_emotion():
         
         # 3. JSONレスポンスのパース
         try:
-            # response.text はJSON形式の文字列として取得される
+            # response.text はJSON形式の文字列として取得
             analysis_data = json.loads(response.text)
             happiness = analysis_data.get('happiness')
             anger = analysis_data.get('anger')
@@ -231,7 +232,7 @@ def analyze_emotion():
                 raise ValueError("JSON形式が不正、または値が範囲外です。")
                 
         except (json.JSONDecodeError, ValueError) as e:
-             # JSONパースまたは値検証エラーの場合
+             
              print(f"APIレスポンスのパースエラー: {e}")
              raise Exception("感情分析結果の形式が不正です。")
 
@@ -259,23 +260,34 @@ def analyze_emotion():
                     access_token_secret=auth_record.access_token_secret
                 )
 
-                # V1.1 APIクライアントは画像アップロードに必要
+                # V1.1 APIクライアントは画像アップロード用
                 auth = OAuthHandler(TWITTER_API_KEY, TWITTER_API_SECRET)
                 auth.set_access_token(auth_record.access_token, auth_record.access_token_secret)
                 api_v1 = API(auth, wait_on_rate_limit=True) 
                 
                 # 5-2. 投稿文の作成 
-                base_text = f"【感情記録】\n幸福度: {happiness:.1f} / 怒りレベル: {anger:.1f}\n"
-                # Twitterの文字数制限（280文字）を考慮してテキストを調整
-                hashtag_length = len("\n#感情アーカイブ #GeminiAPI")
-                remaining_length = 280 - len(base_text) - hashtag_length - 3 
-                
-                post_text = base_text + text_content[:remaining_length]
-                if len(text_content) > remaining_length:
-                    post_text += "..."
-                    
-                final_post_text = post_text + "\n#感情アーカイブ #GeminiAPI"
+                base_text_analysis = f"【感情記録】\n幸福度: {happiness:.1f} / 怒りレベル: {anger:.1f}"
+                hashtags = "\n#感情アーカイブ #GeminiAPI"
 
+                fixed_part_length = len(base_text_analysis) + len(hashtags) + 2 
+                total_limit = 280
+
+                # ユーザーテキストに使える文字数を計算
+                remaining_length = total_limit - fixed_part_length
+
+                # ユーザーテキストを文字数制限に合わせて調整
+                truncated_text_content = text_content
+                if len(text_content) > remaining_length:
+        
+                    truncated_text_content = text_content[:remaining_length - 3] + "..." 
+                    
+                # 最終的な投稿文の構成 
+                final_post_text = (
+                    truncated_text_content + "\n\n" + 
+                    base_text_analysis + 
+                    hashtags
+                )
+                
                 # 5-3. 画像のアップロード (V1.1 APIクライアントを使用)
                 media_ids = []
                 if saved_image_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path)):
@@ -305,7 +317,7 @@ def analyze_emotion():
 
     except Exception as e:
         print(f"Gemini API呼び出しエラー: {e}")
-        # APIエラーの場合でも、念のためDBセッションをロールバックし、保存した画像があれば削除
+        
         db.session.rollback() 
         if saved_image_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path)):
              os.remove(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path))
@@ -339,13 +351,11 @@ def get_emotion_history():
     })
     
 
-
+# --- アプリ起動 ---
 
 if __name__ == '__main__':
-    # データベースの初期化と作成をアプリ起動時に行う
+    
     with app.app_context():
         db.create_all()
         
     app.run(debug=True)
-
-
