@@ -57,10 +57,10 @@
 5. App info にて、Callback URI / Redirect URLに、以下のリダイレクトURLを設定します。
 
 ```
-http://127.0.0.1:5000/callback/twitter
+http://
 ```
 
-6. Website URLに、https://example.com など（ご自身のウェブサイトURLを設定してください）
+6. Website URLになど（ご自身のウェブサイトURLを設定してください）
 
 7. 設定を保存した後、「Keys and tokens」セクションに移動し、Consumer Keys (API Key & Secret) を生成または再生成します。
 
