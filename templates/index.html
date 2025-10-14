@@ -10,7 +10,12 @@
 <body>
     <div class="container">
         <h1>感情周期グラフ</h1>
-        <p>過去の感情の推移を可視化。未来の「感情の天気予報」に役立てましょう。</p>
+        
+        <div id="emotionPredictionContainer" class="emotion-prediction">
+            <div id="predictionResult">
+                <p class="auth-message">過去の感情の推移を可視化。未来の「感情の天気予報」を分析しています...</p>
+            </div>
+        </div>
         
         <div class="tabs">
             <button class="tabButton" data-target="post-history">投稿</button>
@@ -50,9 +55,9 @@
 
             <div id="post-history" class="tab-content">
                 <h2>投稿履歴</h2>
-                <div id="historyList">
-                    <p id="noHistoryMessage" style="text-align: center; color: #7f8c8d; padding: 20px; display: none;">まだ投稿がありません。</p>
-                </div>
+                <p id="noHistoryMessage" style="text-align: center; color: #7f8c8d; padding: 20px; display: none;">まだ投稿がありません。</p>
+                <ul id="historyList" class="emotion-history-list">
+                    </ul>
             </div>
         </div>
         </div>
