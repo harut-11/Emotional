@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from google import genai
 from PIL import Image
 from flask_cors import CORS
-from tweepy import OAuthHandler, API, Client 
+from tweepy import OAuthHandler, API, Client # Clientをv2用に追加
 from sqlalchemy import func
 
 # --- 設定 ---
@@ -32,285 +32,219 @@ app = Flask(__name__, static_url_path='/static')
 # SQLiteを使用し、インスタンスフォルダにデータベースを作成
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///emotion_archive.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# セッション暗号化のための秘密鍵を設定
-app.secret_key = os.getenv("SECRET_KEY", "your_default_secret_key_if_not_set_in_env")
+# セッション暗号化のための秘密鍵
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "your_secret_key_if_not_set")
 
-# 画像ファイルの保存先
-UPLOAD_FOLDER = 'images'
+# ファイルアップロード設定
+UPLOAD_FOLDER = 'uploads/images'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# 画像保存ディレクトリが存在しない場合は作成
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 
 db = SQLAlchemy(app)
-CORS(app, resources={r"/*": {"origins": CORS_ORIGIN}})
+CORS(app, resources={r"/*": {"origins": [CORS_ORIGIN, "http://127.0.0.1:5000"]}})
 
+# --- Gemini API クライアント初期化 ---
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_NAME = 'gemini-2.5-flash'
+MODEL_NAME = "gemini-2.5-flash"
 
-
-# --- データベースモデル ---
+# --- DBモデル定義 ---
 class EmotionRecord(db.Model):
-    """感情の記録を保持するモデル"""
     id = db.Column(db.Integer, primary_key=True)
+    text_content = db.Column(db.String(500), nullable=False)
     happiness = db.Column(db.Float, nullable=False)
     anger = db.Column(db.Float, nullable=False)
-    text_content = db.Column(db.Text, nullable=False)
     image_path = db.Column(db.String(255), nullable=True) # 保存された画像ファイル名
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
 
-class TwitterAuth(db.Model):
-
-    id = db.Column(db.Integer, primary_key=True)
-    screen_name = db.Column(db.String(50), nullable=False)
-    access_token = db.Column(db.String(255), nullable=False)
-    access_token_secret = db.Column(db.String(255), nullable=False)
-    
-    
-# アプリケーションコンテキスト内でのDB初期化
+# アプリケーションコンテキスト内でデータベースを初期化
 with app.app_context():
     db.create_all()
 
+# --- Twitter認証関連 ---
 
-# --- Twitter認証エンドポイント ---
+def get_twitter_auth_client():
+    """OAuth1クライアントを取得 (v1.1 API用)"""
+    auth = OAuthHandler(TWITTER_API_KEY, TWITTER_API_SECRET)
+    if 'request_token' in session:
+        auth.request_token = session['request_token']
+    return auth
+
+def get_twitter_v2_client():
+    """OAuth2 (v2 API) クライアントを取得 (ツイート投稿用)"""
+    if 'access_token' in session and 'access_token_secret' in session:
+        # v1.1のAuthHandlerのトークンを使用してv2クライアントに認証情報を渡す
+        return Client(
+            consumer_key=TWITTER_API_KEY,
+            consumer_secret=TWITTER_API_SECRET,
+            access_token=session['access_token'],
+            access_token_secret=session['access_token_secret'],
+            wait_on_rate_limit=True # レート制限時に待機するオプションを追加
+        )
+    return None
+
 @app.route('/auth/twitter')
 def twitter_auth():
-    """Twitter認証を開始し、ユーザーを認証URLにリダイレクト"""
-    if not TWITTER_API_KEY or not TWITTER_API_SECRET:
-        return render_template('error.html', message="Twitter APIキーが設定されていません。")
-        
+    """Twitter認証を開始"""
     try:
-        # V1.1の認証ハンドラを使用
-        auth = OAuthHandler(TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_CALLBACK_URL)
-        redirect_url = auth.get_authorization_url()
-        # リクエストトークンをセッションに保存
-        session['request_token'] = auth.request_token 
+        auth = get_twitter_auth_client()
+        redirect_url = auth.get_authorization_url(TWITTER_CALLBACK_URL)
+        session['request_token'] = auth.request_token
         return redirect(redirect_url)
     except Exception as e:
-        print(f"Twitter認証エラー: {e}")
-        return render_template('error.html', message="Twitter認証の開始に失敗しました。")
+        return render_template('error.html', message=f"Twitter認証エラー: {e}")
 
 @app.route('/callback/twitter')
 def twitter_callback():
-    """Twitterからのコールバックを受け取り、アクセストークンを取得・保存"""
-    verifier = request.args.get('oauth_verifier')
-    if not verifier:
-        return render_template('error.html', message="Twitter認証がキャンセルされました。")
-
+    """Twitter認証コールバック"""
     try:
-        # 1. 保存されたリクエストトークンを取得
-        request_token = session.pop('request_token', None)
-        if not request_token:
-            return render_template('error.html', message="セッションにリクエストトークンが見つかりません。認証をやり直してください。")
-            
-        # 2. アクセストークンを取得
-        auth = OAuthHandler(TWITTER_API_KEY, TWITTER_API_SECRET)
-        auth.request_token = request_token
+        verifier = request.args.get('oauth_verifier')
+        auth = get_twitter_auth_client()
+        token = auth.get_access_token(verifier)
         
-        # Access TokenとAccess Token Secretを取得
-        token, token_secret = auth.get_access_token(verifier)
+        # アクセストークンとシークレットをセッションに保存
+        session['access_token'] = token[0]
+        session['access_token_secret'] = token[1]
         
-
-        auth.set_access_token(token, token_secret)
-        api = API(auth, wait_on_rate_limit=True) 
-        
-        # verify_credentials() で認証済みのユーザー情報を取得
+        # ユーザー情報を取得 (API v1.1を使用)
+        auth.set_access_token(token[0], token[1])
+        api = API(auth)
         user = api.verify_credentials()
-        screen_name = user.screen_name # ユーザーオブジェクトからscreen_nameを取得
+        session['screen_name'] = user.screen_name
+        
+        # request_tokenを削除
+        session.pop('request_token', None)
 
-        # 4. DBにトークンを保存
-        auth_record = TwitterAuth.query.first()
-        if not auth_record:
-            auth_record = TwitterAuth(
-                screen_name=screen_name,
-                access_token=token,
-                access_token_secret=token_secret
-            )
-            db.session.add(auth_record)
-        else:
-            auth_record.screen_name = screen_name
-            auth_record.access_token = token
-            auth_record.access_token_secret = token_secret
-            
-        db.session.commit()
-
-        return render_template('auth_success.html', screen_name=screen_name)
-
+        return render_template('auth_success.html', screen_name=user.screen_name)
     except Exception as e:
-        print(f"Twitterコールバックエラー: {e}")
-        db.session.rollback()
-        return render_template('error.html', message=f"Twitter認証情報の保存に失敗しました。{e}")
+        session.pop('request_token', None)
+        return render_template('error.html', message=f"Twitter認証コールバックエラー: {e}")
+
+@app.route('/twitter_status', methods=['GET'])
+def twitter_status():
+    """Twitter連携状態をチェック"""
+    return jsonify({
+        'status': 'linked' if 'access_token' in session else 'unlinked',
+        'screen_name': session.get('screen_name')
+    })
 
 
-# --- トップページ ---
-@app.route('/')
-def index():
-    """index.htmlをレンダリングし、Twitter認証状態を確認"""
-    auth_status = TwitterAuth.query.first() is not None
-    return render_template('index.html', twitter_authenticated=auth_status)
+# --- 感情分析＆記録エンドポイント ---
 
-# --- 画像表示用エンドポイント ---
-@app.route('/images/<filename>')
-def serve_image(filename):
-    """保存された画像ファイルを配信するエンドポイント"""
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+def post_to_twitter(text, happiness, anger, image_file=None):
+    """Twitterに投稿するヘルパー関数 (v1.1でメディアアップロード、v2でツイート)"""
+    if 'access_token' not in session:
+        return False
+    
+    try:
+        # 投稿メッセージを作成
+        message = f"{text}\n\n#感情アーカイブ\n幸福度: {happiness:.1f}/10.0, 怒り: {anger:.1f}/10.0"
 
+        # --- v1.1 API でメディアをアップロード (メディアのIDを取得するためにv1.1を使用) ---
+        auth = get_twitter_auth_client()
+        auth.set_access_token(session['access_token'], session['access_token_secret'])
+        api_v1 = API(auth) # v1.1 APIクライアント
 
-# --- 感情分析・記録・投稿エンドポイント ---
+        media_ids = None
+        if image_file:
+            # v1.1のmedia_uploadを使用して画像をアップロード
+            media = api_v1.media_upload(image_file)
+            media_ids = [media.media_id_string] # media_id_stringを取得
+
+        # --- v2 API でツイートを投稿 ---
+        client_v2 = get_twitter_v2_client()
+        if not client_v2:
+            raise Exception("Twitter V2クライアントの初期化に失敗しました。")
+
+        # ツイート (API v2のcreate_tweetを使用)
+        client_v2.create_tweet(text=message, media_ids=media_ids)
+        return True
+    except Exception as e:
+        print(f"Twitter投稿エラー: {e}")
+        return False
+
 @app.route('/analyze_emotion', methods=['POST'])
 def analyze_emotion():
-    """
-    1. Gemini APIで感情分析
-    2. 結果をDBに保存
-    3. Twitterに自動投稿（連携されている場合のみ）
-    """
+    """テキストと画像をGeminiで分析し、感情をDBに記録するAPI"""
     
-    # 0. 入力データの取得と処理
+    text_content = request.form.get('text_content', '')
+    image_file = request.files.get('file')
+    
+    if not text_content and not image_file:
+        return jsonify({"error": "テキストまたは画像が必要です。"}, 400)
+
+    # 1. 画像の保存処理
+    saved_image_path = None
+    save_path = None
+    if image_file:
+        # ファイル名をUUIDで安全に生成
+        ext = image_file.filename.split('.')[-1]
+        if ext.lower() not in ['jpg', 'jpeg', 'png', 'gif']:
+             return jsonify({"error": "サポートされていない画像形式です。"}, 400)
+             
+        filename = f"{uuid.uuid4()}.{ext}"
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        image_file.save(save_path)
+        saved_image_path = filename
+
+    # 2. Gemini APIのプロンプトとコンテンツリストの準備
+    prompt = (
+        "以下のテキストと画像を分析し、現在の感情を「幸福度 (Happiness)」と「怒りレベル (Anger)」の2つの指標で、0.0から10.0までの小数点以下1桁の数値で評価してください。"
+        "出力はJSON形式のみとし、他の文章は一切含めないでください。幸福度は高いほどポジティブ、怒りレベルは高いほどネガティブであることを示します。\n\n"
+        "--- 出力形式 ---\n"
+        "{\n"
+        "  \"happiness\": 5.5,\n"
+        "  \"anger\": 2.1\n"
+        "}\n\n"
+        "--- 入力情報 ---\n"
+        f"テキスト: {text_content}"
+    )
+
+    contents = [prompt]
+    if save_path:
+        try:
+            img = Image.open(save_path)
+            contents.append(img)
+        except Exception as e:
+            print(f"PIL画像読み込みエラー: {e}")
+            return jsonify({"error": "画像の読み込みに失敗しました。"}, 500)
+
     try:
-        text_content = request.form.get('textContent', '').strip()
-        image_file = request.files.get('file')
-        saved_image_path = None
-        
-        # テキストまたは画像が必須
-        if not text_content and not image_file:
-            return jsonify({"error": "テキストまたは画像を入力してください。"}), 400
-            
-        # 画像ファイルがあれば保存
-        image_part = None
-        if image_file:
-            # PIL Imageオブジェクトを作成
-            image_data = image_file.read()
-            image = Image.open(io.BytesIO(image_data))
-            
-            # データベースに保存するファイル名を生成
-            filename = f"{uuid.uuid4().hex}_{image_file.filename}"
-            full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            
-            # 画像をJPEG形式で保存
-            image.save(full_path, 'jpeg')
-            saved_image_path = filename
-            
-            # Gemini API用のPartを作成
-            image_part = genai.types.Part.from_bytes(
-                data=image_data,
-                mime_type=image_file.mimetype # 'image/jpeg'など
-            )
-            
-        # 1. Gemini APIに投げるプロンプトとコンテンツリストを作成
-        
-        # プロンプト定義
-        prompt = (
-            "あなたは感情分析の専門家です。以下の入力（テキストおよびオプションで画像）を分析し、"
-            "「幸福度 (0.0〜10.0)」と「怒りレベル (0.0〜10.0)」の2つの指標で評価してください。"
-            "分析結果はJSON形式のみで出力し、他の文章は一切含めないでください。小数点以下1桁までで評価してください。\n"
-            "例: {\"happiness\": 8.5, \"anger\": 1.2}\n\n"
-            "--- 入力 ---\n"
-            f"テキスト: {text_content}"
-        )
-        
-        # APIに渡すコンテンツリスト
-        contents = [prompt]
-        if image_part:
-            contents.append(image_part)
-            
-        # 2. Gemini APIの呼び出し
+        # 3. Gemini API呼び出し
         response = client.models.generate_content(
             model=MODEL_NAME,
             contents=contents,
             config={"response_mime_type": "application/json"}
         )
         
-        # 3. JSONレスポンスのパース
-        try:
-            # response.text はJSON形式の文字列として取得
-            analysis_data = json.loads(response.text)
-            happiness = analysis_data.get('happiness')
-            anger = analysis_data.get('anger')
-            
-            # 値のバリデーション
-            if happiness is None or anger is None or not (0.0 <= happiness <= 10.0 and 0.0 <= anger <= 10.0):
-                raise ValueError("JSON形式が不正、または値が範囲外です。")
-                
-        except (json.JSONDecodeError, ValueError) as e:
-             
-             print(f"APIレスポンスのパースエラー: {e}")
-             raise Exception("感情分析結果の形式が不正です。")
-
-        # 4. データベースへの保存
+        # 4. 感情値の抽出とバリデーション
+        emotion_data = json.loads(response.text)
+        happiness = float(emotion_data.get('happiness', 0.0))
+        anger = float(emotion_data.get('anger', 0.0))
+        
+        # 値の範囲を0.0から10.0にクリップ
+        happiness = max(0.0, min(10.0, happiness))
+        anger = max(0.0, min(10.0, anger))
+        
+        # 5. DBへの保存
         new_record = EmotionRecord(
+            text_content=text_content,
             happiness=happiness,
             anger=anger,
-            text_content=text_content,
             image_path=saved_image_path
         )
         db.session.add(new_record)
         db.session.commit()
-        
-        # 5. 【V2 APIを使用】Twitterへの自動投稿処理 
+
+        # 6. Twitterへの自動投稿
         twitter_post_success = False
-        auth_record = TwitterAuth.query.first() # 連携トークンを取得
+        if 'access_token' in session:
+            # post_to_twitterにファイルの保存パスを渡す
+            twitter_post_success = post_to_twitter(text_content, happiness, anger, save_path if saved_image_path else None)
         
-        if auth_record:
-            try:
-                # 5-1. V2 Clientの初期化
-                client_v2 = Client(
-                    consumer_key=TWITTER_API_KEY, 
-                    consumer_secret=TWITTER_API_SECRET, 
-                    access_token=auth_record.access_token, 
-                    access_token_secret=auth_record.access_token_secret
-                )
-
-                # V1.1 APIクライアントは画像アップロード用
-                auth = OAuthHandler(TWITTER_API_KEY, TWITTER_API_SECRET)
-                auth.set_access_token(auth_record.access_token, auth_record.access_token_secret)
-                api_v1 = API(auth, wait_on_rate_limit=True) 
-                
-                # 5-2. 投稿文の作成 
-                base_text_analysis = f"【感情記録】\n幸福度: {happiness:.1f} / 怒りレベル: {anger:.1f}"
-                hashtags = "\n#感情アーカイブ #GeminiAPI"
-
-                fixed_part_length = len(base_text_analysis) + len(hashtags) + 2 
-                total_limit = 280
-
-                # ユーザーテキストに使える文字数を計算
-                remaining_length = total_limit - fixed_part_length
-
-                # ユーザーテキストを文字数制限に合わせて調整
-                truncated_text_content = text_content
-                if len(text_content) > remaining_length:
-        
-                    truncated_text_content = text_content[:remaining_length - 3] + "..." 
-                    
-                # 最終的な投稿文の構成 
-                final_post_text = (
-                    truncated_text_content + "\n\n" + 
-                    base_text_analysis + 
-                    hashtags
-                )
-                
-                # 5-3. 画像のアップロード (V1.1 APIクライアントを使用)
-                media_ids = []
-                if saved_image_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path)):
-                    full_image_path = os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path)
-                    
-                    # 画像をTwitterにアップロードし、IDを取得
-                    media = api_v1.media_upload(full_image_path)
-                    media_ids.append(media.media_id)
-                
-                # 5-4. 投稿実行 - V2 Clientを使用
-                client_v2.create_tweet(text=final_post_text, media_ids=media_ids if media_ids else None)
-                
-                twitter_post_success = True
-                print("Twitter（V2 Client）への自動投稿に成功しました。")
-                
-            except Exception as e:
-    
-                print(f"Twitter投稿エラー（記録は成功）: {e}") 
-        
-        # 6. 成功レスポンス
         return jsonify({
             "status": "success",
-            "emotion_data": {"happiness": happiness, "anger": anger},
+            "happiness": happiness,
+            "anger": anger,
             "record_id": new_record.id,
             "twitter_posted": twitter_post_success 
         })
@@ -319,6 +253,7 @@ def analyze_emotion():
         print(f"Gemini API呼び出しエラー: {e}")
         
         db.session.rollback() 
+        # エラー発生時は保存した画像ファイルを削除
         if saved_image_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path)):
              os.remove(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path))
         return jsonify({"error": "感情分析中にエラーが発生しました。入力内容を確認してください。またはTwitter APIキーを確認してください。"}, 500)
@@ -342,20 +277,92 @@ def get_emotion_history():
             'created_at': record.created_at.strftime('%Y-%m-%d %H:%M:%S')
         })
     
-    # 認証ステータスも取得
-    auth_status = TwitterAuth.query.first() is not None
+    return jsonify({"history": history})
 
-    return jsonify({
-        "records": history,
-        "twitter_authenticated": auth_status
-    })
+
+# --- 感情予測エンドポイント ---
+@app.route('/predict_emotion', methods=['GET'])
+def predict_emotion():
+    """
+    過去の感情履歴に基づき、Gemini APIで未来の感情傾向とアドバイスを予測する
+    """
+    # 1. 過去の感情データを取得 (直近30件)
+    # 時系列分析に適した形式でデータを取得
+    records = EmotionRecord.query.order_by(EmotionRecord.created_at.desc()).limit(30).all()
     
+    if not records:
+        return jsonify({"error": "予測に必要な感情データが不足しています（最低1件必要）。"}), 400
 
-# --- アプリ起動 ---
+    # データをJSON形式に変換（予測に必要なデータのみ抽出）
+    history_data = []
+    # 取得した順序が降順なので、時系列順（昇順）に戻す
+    for record in reversed(records):
+        history_data.append({
+            'date': record.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'happiness': record.happiness,
+            'anger': record.anger
+        })
+
+    history_json = json.dumps(history_data, ensure_ascii=False)
+
+    # 2. Gemini API用のプロンプトを作成
+    prompt = (
+        "あなたは感情傾向の分析と未来予測の専門家です。以下の過去の感情データ（最大30件）を分析し、"
+        "今後の感情の傾向（例: 3日後の幸福度と怒りレベルの予測）と、その傾向に基づいた「日々の意思決定に役立つ具体的なアドバイス」をJSON形式で出力してください。"
+        "予測は、過去のデータのトレンドや周期性に基づき、客観的かつ論理的に行ってください。"
+        "出力はJSON形式のみとし、他の文章は一切含めないでください。\n"
+        "予測は小数点以下1桁までで評価してください。\n\n"
+        "--- 出力形式例 ---\n"
+        "{\n"
+        "  \"prediction_date\": \"今日の日付から約3日後の予測日付（例: 2025-10-17）\",\n"
+        "  \"predicted_happiness\": 7.2, \n"
+        "  \"predicted_anger\": 1.5, \n"
+        "  \"tendency_summary\": \"過去のデータから、幸福度は安定傾向にありますが、3日後あたりで若干の怒りレベルの上昇が見られます。\",\n"
+        "  \"advice\": [\n"
+        "    \"予測される怒りレベルの上昇に備え、3日後は無理をせず休息日を設けてください。\",\n"
+        "    \"幸福度を維持するために、散歩や趣味の時間を取り入れ、ストレス発散を心がけてください。\"\n"
+        "  ]\n"
+        "}\n\n"
+        "--- 過去の感情データ ---\n"
+        f"{history_json}"
+    )
+
+    # 3. Gemini APIの呼び出し
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=[prompt],
+            config={"response_mime_type": "application/json"}
+        )
+
+        # 4. JSONレスポンスのパース
+        prediction_data = json.loads(response.text)
+        
+        # 簡易的なバリデーション
+        if not all(k in prediction_data for k in ["predicted_happiness", "predicted_anger", "tendency_summary", "advice"]):
+            raise ValueError("Geminiからの予測結果のJSON形式が期待通りではありません。")
+
+        return jsonify({
+            "status": "success",
+            "prediction": prediction_data
+        })
+
+    except Exception as e:
+        print(f"感情予測エラー: {e}")
+        return jsonify({"error": f"感情予測中にエラーが発生しました。データが不足しているか、API設定を確認してください: {e}"}), 500
+
+# --- ルーティング ---
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/images/<path:filename>')
+def serve_image(filename):
+    """アップロードされた画像を返す"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
-    
+    # データベースの初期化
     with app.app_context():
         db.create_all()
-        
     app.run(debug=True)
