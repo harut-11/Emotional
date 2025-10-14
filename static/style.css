@@ -1,3 +1,4 @@
+/* style.css */
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f4f7f6;
@@ -24,10 +25,11 @@ h1 {
     margin-bottom: 5px;
 }
 
+/* 予測結果に置き換えるため、このpタグのデフォルトスタイルは影響しないよう調整 */
 p {
     text-align: center;
     color: #7f8c8d;
-    margin-bottom: 30px;
+    margin: 0 0 1em 0; 
 }
 
 .chart-container {
@@ -41,72 +43,124 @@ h2 {
     border-bottom: 2px solid #ecf0f1;
     padding-bottom: 10px;
     margin-top: 30px;
+    margin-bottom: 20px;
+    text-align: left;
 }
 
-/* フォームの基本スタイル */
-.record-form {
+/* --- タブスタイル --- */
+.tabs {
     display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 20px;
+    justify-content: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ccc;
 }
 
-/* テキストエリア */
-#textContent {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    resize: vertical;
-    font-size: 16px;
-    box-sizing: border-box; /* paddingを含めたサイズで計算 */
-}
-
-/* ファイル入力グループ */
-.file-input-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
-
-.file-input-group label {
-    font-weight: bold;
-    color: #34495e;
-}
-
-/* 送信ボタン */
-#submitButton {
-    padding: 12px 20px;
-    background-color: #2ecc71; /* 緑色 */
-    color: white;
+.tabButton {
+    background: none;
     border: none;
-    border-radius: 8px;
+    padding: 10px 20px;
     cursor: pointer;
     font-size: 18px;
+    color: #7f8c8d;
+    transition: color 0.3s, border-bottom 0.3s;
+}
+
+.tabButton.active {
+    color: #3498db;
+    border-bottom: 3px solid #3498db;
     font-weight: bold;
+}
+
+.tab-content-container {
+    padding: 10px 0;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* --- データ入力フォーム --- */
+.data-input {
+    margin-top: 40px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f7f7f7;
+}
+
+.record-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.record-form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
     transition: background-color 0.3s ease;
 }
 
-#submitButton:hover {
-    background-color: #27ae60;
+.record-form button:hover:not(:disabled) {
+    background-color: #2980b9;
 }
 
-#submitButton:disabled {
-    background-color: #bdc3c7;
+.record-form button:disabled {
+    background-color: #95a5a6;
     cursor: not-allowed;
+}
+
+/* ファイル入力のスタイル */
+.file-input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.file-input-group label {
+    background-color: #f39c12;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+    font-size: 14px;
+}
+
+.file-input-group label:hover {
+    background-color: #e67e22;
+}
+
+.file-input-group input[type="file"] {
+    display: none;
 }
 
 /* メッセージエリア */
 .message-area {
     margin-top: 20px;
-    padding: 15px;
-    border-radius: 8px;
-    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
     font-weight: bold;
+    text-align: center;
+}
+
+.message-area.info {
+    background-color: #d6e9f8;
+    color: #3498db;
 }
 
 .message-area.success {
@@ -119,213 +173,252 @@ h2 {
     color: #721c24;
 }
 
-/* タブのコンテナ */
-.tabs {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #ecf0f1;
-}
-
-/* タブボタンの基本スタイル */
-.tabButton {
-    padding: 10px 20px;
-    margin: 0 5px;
-    background-color: transparent;
-    border: none;
-    border-bottom: 3px solid transparent; /* 下線のアニメーション用 */
-    cursor: pointer;
-    font-size: 18px;
-    font-weight: bold;
-    color: #95a5a6; /* 非アクティブ時の色 */
-    transition: all 0.3s ease;
-}
-
-/* アクティブなタブボタンのスタイル */
-.tabButton.active {
-    color: #3498db; /* アクティブ時の色 */
-    border-bottom: 3px solid #3498db; /* アクティブ時の下線 */
-}
-
-/* タブコンテンツのコンテナ */
-.tab-content-container {
-    padding-top: 20px;
-}
-
-/* 全てのタブコンテンツを初期は非表示 */
-.tab-content {
-    display: none;
-}
-
-/* アクティブなタブコンテンツのみ表示 */
-.tab-content.active {
-    display: block;
-}
-
-
-/* --- 履歴一覧のスタイル --- */
-
-.history-item {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-    background-color: #fcfcfc;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.history-item strong {
-    color: #2c3e50;
-    font-size: 1.1em;
-}
-
-.history-item-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9em;
-    color: #7f8c8d;
-    margin-bottom: 10px;
-    border-bottom: 1px dashed #ecf0f1;
-    padding-bottom: 5px;
-}
-
-.history-item-text {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #ecf0f1;
-    border-left: 4px solid #3498db;
-    border-radius: 4px;
-    white-space: pre-wrap; /* 改行を保持 */
-}
-
-
-
-/* 添付画像があったときのコンテナ */
-.history-item-image-container {
-    margin-top: 15px; /* テキストやメタ情報との間にスペースを設ける */
-    text-align: center; /* 画像を中央に配置 */
-    /* padding: 10px; */ /* 必要に応じてパディングを追加 */
-}
-
-/* 投稿一覧に表示する画像表示用のスタイル */
-.history-image {
-    max-width: 50%; /* 画像の最大幅をコンテナに合わせる */
-    height: auto;
-    max-height: 250px; /* 画像の最大高さを設定 */
-    border-radius: 6px; /* 角を丸くする */
-    object-fit: contain; /* 画像のアスペクト比を維持 */
-    border: 1px solid #ddd; /* 薄い境界線 */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
-    transition: transform 0.2s ease; 
-    cursor: pointer; 
-}
-
-
-.history-image:hover {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-
-/* レスポンシブ対応 (768px以下) */
-@media (max-width: 768px) {
-    /* 1. 全体設定の調整 */
-    body {
-        /* スマートフォンでは上部の余白を少し減らす */
-        padding-top: 20px;
-    }
-
-    /* .container の調整 */
-    .container {
-        /* スマホで横いっぱいに見せるため、左右の影を抑える */
-        box-shadow: none;
-        padding: 15px; /* 内部のパディングを減らす */
-        width: 100%; /* 念のため100%に設定 */
-        border-radius: 0; /* 角丸をなくして全画面に馴染ませる */
-    }
-
-    /* 2. フォーム要素の調整 */
-    .record-form {
-        gap: 10px; /* フォームの要素間の間隔を少し減らす */
-    }
-    
-    /* ファイル入力グループを縦に並べる（画面が小さい場合） */
-    .file-input-group {
-        flex-direction: column; /* 縦並びにする */
-        align-items: flex-start; /* 左寄せにする */
-        gap: 5px;
-    }
-
-    /* 送信ボタンのフォントサイズを調整 */
-    #submitButton {
-        font-size: 16px;
-        padding: 10px 15px;
-    }
-
-    /* 3. タブの調整 */
-    .tabs {
-        /* 横幅が狭い場合は中央寄せを解除し、要素を詰め気味にする */
-        justify-content: space-around;
-        margin-bottom: 10px;
-    }
-
-    .tabButton {
-        padding: 8px 10px; /* タブボタンのパディングを減らす */
-        font-size: 16px; /* フォントサイズを調整 */
-    }
-
-    /* 4. 履歴一覧の調整 */
-    .history-item {
-        padding: 10px; /* 履歴アイテムのパディングを減らす */
-        margin-bottom: 10px;
-    }
-
-    .history-item-meta {
-        /* 投稿日時とファイル名を縦に並べる、またはレイアウト調整 */
-        flex-direction: column; 
-        gap: 5px;
-    }
-
-    /* 添付画像があったときのコンテナ調整 */
-    .history-item-image-container {
-        margin-top: 10px;
-    }
-
-    /* 画像サイズの調整 */
-    .history-image {
-        /* スマホでは画面いっぱいに広げ、横スクロールを防ぐ */
-        max-width: 100%; 
-        max-height: 200px; /* 高さを調整 */
-    }
-}
-
-/* --- Twitter連携ボタンのスタイル (新規追加) --- */
+/* --- Twitter連携ボタンのスタイル --- */
 .twitter-auth-section {
-    text-align: center;
     margin-bottom: 20px;
     padding: 15px;
-    border: 1px solid #dcdcdc;
-    border-radius: 8px;
-    background-color: #f7f7f7;
+    border: 1px solid #3498db;
+    border-radius: 5px;
+    background-color: #eaf6ff;
+    text-align: center;
 }
 
-#twitterAuthButton {
-    padding: 10px 20px;
-    background-color: #1DA1F2; /* Twitter Blue */
+.twitter-auth-section button {
+    padding: 10px 15px;
+    background-color: #1da1f2; /* Twitter Blue */
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
     transition: background-color 0.3s ease;
 }
 
-#twitterAuthButton:hover {
-    background-color: #1789c6;
+.twitter-auth-section button:hover {
+    background-color: #0c85d0;
 }
 
 .auth-message {
-    margin: 5px 0 10px 0;
     font-size: 0.9em;
-    color: #6c757d;
+    margin-bottom: 10px;
+    color: #2980b9;
+    font-style: italic;
+}
+
+/* --- 投稿履歴リスト --- */
+.emotion-history-list {
+    list-style: none;
+    padding: 0;
+}
+
+.history-item {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.history-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px dotted #ccc;
+    padding-bottom: 5px;
+}
+
+.history-date {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.history-emotion-score {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.happiness.good { background-color: #d4edda; color: #155724; } /* Green */
+.happiness.neutral { background-color: #fff3cd; color: #856404; } /* Yellow */
+.happiness.bad { background-color: #f8d7da; color: #721c24; } /* Red */
+
+.anger.good { background-color: #d4edda; color: #155724; } /* Green (低怒り=良い) */
+.anger.neutral { background-color: #fff3cd; color: #856404; } /* Yellow */
+.anger.bad { background-color: #f8d7da; color: #721c24; } /* Red (高怒り=悪い) */
+
+.history-text {
+    font-size: 1em;
+    color: #333;
+    margin: 0;
+    text-align: left;
+}
+
+.history-item-image-container {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.history-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 5px;
+    object-fit: contain;
+}
+
+/* --- 感情予測エリアのスタイル --- */
+.emotion-prediction {
+    /* H1の直下へ移動したため、マージンを調整しコンパクトに */
+    margin: 10px 0 30px 0; 
+    padding: 0; 
+    border: none;
+    background-color: transparent; 
+    text-align: center;
+}
+
+.prediction-box {
+    text-align: left;
+    padding: 15px;
+    border: 2px solid #3498db; /* メインカラー */
+    border-radius: 10px;
+    background-color: #eaf6ff; /* 薄い青の背景 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.prediction-title {
+    color: #2c3e50;
+    font-size: 1.3em;
+    border-bottom: 2px solid #a4c9e4;
+    padding-bottom: 5px;
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.prediction-scores {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.score-item {
+    margin: 0;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.happiness-score {
+    color: #2ecc71; /* 緑 */
+    border: 1px solid #2ecc71;
+}
+
+.anger-score {
+    color: #e74c3c; /* 赤 */
+    border: 1px solid #e74c3c;
+}
+
+.prediction-summary {
+    font-style: italic;
+    color: #7f8c8d;
+    margin: 15px 0;
+    padding: 10px;
+    border-left: 3px solid #f39c12; /* オレンジの強調 */
+    background-color: #fef0db;
+}
+
+.advice-section {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f7f9fb;
+    border-radius: 5px;
+}
+
+.advice-section h4 {
+    color: #34495e;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.advice-section ul {
+    list-style-type: '👉'; 
+    padding-left: 20px;
+    margin: 0;
+}
+
+.advice-section li {
+    margin-bottom: 8px;
+    padding-left: 5px;
+}
+
+/* --- ローディングスピナーのスタイル --- */
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border-left-color: #3498db; 
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.auth-message.error {
+    color: #e74c3c;
+}
+
+/* --- レスポンシブデザイン --- */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 15px;
+        width: 100%;
+        box-shadow: none;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .data-input {
+        padding: 15px;
+    }
+    
+    .chart-container {
+        height: 300px; 
+        margin-bottom: 20px;
+    }
+
+    /* 予測スコアを縦に並べる */
+    .prediction-scores {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .score-item {
+        width: 80%;
+        margin: 0 auto;
+    }
+
+    /* 履歴のメタ情報を縦に */
+    .history-item-meta {
+        flex-direction: column; 
+        gap: 5px;
+        align-items: flex-start;
+    }
+
+    .history-emotion-score {
+        margin-left: 0;
+        margin-right: 10px;
+    }
 }
