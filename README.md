@@ -57,7 +57,7 @@
 5. App info にて、Callback URI / Redirect URLに、以下のリダイレクトURLを設定します。
 
 ```
-[http://](http://127.0.0.1:5000/callback/twitter)
+http://127.0.0.1:5000/callback/twitter
 ```
 
 6. Website URLになど（ご自身のウェブサイトURLを設定してください）
