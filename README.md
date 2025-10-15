@@ -62,13 +62,17 @@ http://127.0.0.1:5000/callback/twitter
 
 6. Website URLになど（ご自身のウェブサイトURLを設定してください）
 
-7. 設定を保存した後、「Keys and tokens」セクションに移動し、Consumer Keys (API Key & Secret) を生成または再生成します。
+```
+https://example.com
+```
+
+8. 設定を保存した後、「Keys and tokens」セクションに移動し、Consumer Keys (API Key & Secret) を生成または再生成します。
 
 ⚠️ 重要: ここで表示される API Key と API Secret は、次のステップで利用するため、必ず控えておいてください。
 
 4. **.envファイルの設定**
    
-`.env.example`を参考に、プロジェクトのルートディレクトリに`.env`ファイルを作成し、取得したすべてのキーを設定してください。
+`.env.example`を参考に、プロジェクトのルートディレクトリに`.env`ファイルを作成し、取得したすべてのキーを設定してください。（.env.exampleに設定する場合は、ファイル名を.envに変更することを忘れないようにしましょう）
 
 ```
 # Gemini APIキー
