@@ -346,7 +346,7 @@ h2 {
 }
 
 .advice-section ul {
-    list-style-type: '👉'; 
+    list-style-type: '・'; 
     padding-left: 20px;
     margin: 0;
 }
@@ -422,3 +422,4 @@ h2 {
         margin-right: 10px;
     }
 }
+
