@@ -25,6 +25,10 @@
     ```bash
     python3 -m venv venv
     ```
+    ```bash
+    python -m venv venv
+    ```
+- ↑上記のどちらかを
 
     仮想環境に入る
     ```bash
