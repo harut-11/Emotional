@@ -1,4 +1,3 @@
-// script.js
 const API_HISTORY_URL = '/emotion_history'; // 履歴取得API
 const API_ANALYZE_URL = '/analyze_emotion'; // 分析・記録API
 const API_PREDICT_URL = '/predict_emotion'; // 感情予測API (新規追加)
@@ -13,6 +12,8 @@ const noHistoryMessage = document.getElementById('noHistoryMessage');
 // 予測結果を表示するコンテナのDOM要素を定義
 const emotionPredictionContainer = document.getElementById('emotionPredictionContainer');
 const predictionResultDiv = document.getElementById('predictionResult');
+// トグルスイッチのDOM要素を取得 
+const postToTwitterToggle = document.getElementById('postToTwitterToggle'); 
 
 // グローバルなチャートインスタンスを保持するための変数
 let emotionChartInstance = null; 
@@ -33,7 +34,7 @@ function showMessage(type, message) {
  */
 function setFormSubmitting(isSubmitting) {
     submitButton.disabled = isSubmitting;
-    submitButton.textContent = isSubmitting ? '分析中...' : '感情を記録・分析';
+    submitButton.textContent = isSubmitting ? '分析中...' : '感情を分析して記録する';
 }
 
 /**
@@ -93,7 +94,7 @@ function drawEmotionChart(records) {
                 {
                     label: '幸福度 (Happiness)',
                     data: happinessData,
-                    borderColor: 'rgb(52, 152, 219)', // Blue
+                    borderColor: 'rgb(52, 152, 219)', 
                     backgroundColor: 'rgba(52, 152, 219, 0.2)',
                     fill: false,
                     tension: 0.1
@@ -101,7 +102,7 @@ function drawEmotionChart(records) {
                 {
                     label: '怒りレベル (Anger)',
                     data: angerData,
-                    borderColor: 'rgb(231, 76, 60)', // Red
+                    borderColor: 'rgb(231, 76, 60)', 
                     backgroundColor: 'rgba(231, 76, 60, 0.2)',
                     fill: false,
                     tension: 0.1
@@ -242,6 +243,8 @@ emotionForm.addEventListener('submit', async (e) => {
     const textContent = document.getElementById('textContent').value.trim();
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
+    // トグルスイッチの状態を取得 
+    const shouldPostToTwitter = postToTwitterToggle.checked;
 
     if (!textContent && !file) {
         showMessage('error', 'テキストまたは画像を記録してください。');
@@ -255,6 +258,9 @@ emotionForm.addEventListener('submit', async (e) => {
         formData.append('file', file);
     }
 
+    // フォームデータにトグルスイッチの状態を追加 
+    formData.append('post_to_twitter', shouldPostToTwitter);
+
     try {
         const response = await fetch(API_ANALYZE_URL, {
             method: 'POST',
@@ -264,7 +270,9 @@ emotionForm.addEventListener('submit', async (e) => {
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-            showMessage('success', `感情の記録が完了しました！ 幸福度: ${result.happiness.toFixed(1)}, 怒り: ${result.anger.toFixed(1)}。${result.twitter_posted ? 'Twitterにも投稿されました。' : ''}`);
+       
+            const twitterMsg = result.twitter_posted ? 'Twitterにも投稿されました。' : 'Twitterへの投稿はスキップされました。';
+            showMessage('success', `感情の記録が完了しました！ 幸福度: ${result.happiness.toFixed(1)}, 怒り: ${result.anger.toFixed(1)} ${twitterMsg}`);
             
             // フォームとファイル入力をリセット
             emotionForm.reset();
