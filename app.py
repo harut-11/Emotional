@@ -168,7 +168,7 @@ def analyze_emotion():
     
     text_content = request.form.get('text_content', '')
     image_file = request.files.get('file')
-    
+    should_post_to_twitter = request.form.get('post_to_twitter', 'false').lower() == 'true'
     if not text_content and not image_file:
         return jsonify({"error": "テキストまたは画像が必要です。"}, 400)
 
@@ -237,7 +237,7 @@ def analyze_emotion():
 
         # 6. Twitterへの自動投稿
         twitter_post_success = False
-        if 'access_token' in session:
+        if 'access_token' in session and should_post_to_twitter:
             # post_to_twitterにファイルの保存パスを渡す
             twitter_post_success = post_to_twitter(text_content, happiness, anger, save_path if saved_image_path else None)
         
