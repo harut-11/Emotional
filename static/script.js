@@ -77,10 +77,32 @@ function drawEmotionChart(records) {
     records.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     const labels = records.map(record => {
-        // 時刻を含めて表示
         const date = new Date(record.created_at);
+        // 時刻を含めて表示
+        // 修正: ここで日付と時刻の表示ロジックを変更
         return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
     });
+    
+    // --- グラフ表示を改善するための新しいラベル生成ロジック ---
+    let lastDate = null; 
+    const improvedLabels = records.map(record => {
+        const date = new Date(record.created_at);
+        const currentDate = `${date.getMonth() + 1}/${date.getDate()}`; // MM/DD形式
+        const time = `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+        let label;
+        if (currentDate !== lastDate) {
+            // 日付が変わった、または最初のデータの場合、日付と時刻を表示
+            label = `${currentDate} ${time}`;
+            lastDate = currentDate;
+        } else {
+            // 同じ日付の場合、時刻のみを表示
+            label = time;
+        }
+        return label;
+    });
+    // --- 新しいラベル生成ロジックここまで ---
+
     const happinessData = records.map(record => record.happiness);
     const angerData = records.map(record => record.anger);
 
@@ -89,7 +111,8 @@ function drawEmotionChart(records) {
     emotionChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            // labels: labels, // 従来のlabelsをimprovedLabelsに置き換える
+            labels: improvedLabels,
             datasets: [
                 {
                     label: '幸福度 (Happiness)',
@@ -97,7 +120,9 @@ function drawEmotionChart(records) {
                     borderColor: 'rgb(52, 152, 219)', 
                     backgroundColor: 'rgba(52, 152, 219, 0.2)',
                     fill: false,
-                    tension: 0.1
+                    tension: 0.1,
+                    pointRadius: 5, // ポイントを大きく
+                    pointHoverRadius: 7
                 },
                 {
                     label: '怒りレベル (Anger)',
@@ -105,7 +130,9 @@ function drawEmotionChart(records) {
                     borderColor: 'rgb(231, 76, 60)', 
                     backgroundColor: 'rgba(231, 76, 60, 0.2)',
                     fill: false,
-                    tension: 0.1
+                    tension: 0.1,
+                    pointRadius: 5, // ポイントを大きく
+                    pointHoverRadius: 7
                 }
             ]
         },
@@ -140,6 +167,7 @@ function drawEmotionChart(records) {
         }
     });
 }
+
 
 // --- 感情予測処理 ---
 async function fetchEmotionPrediction() {
@@ -358,3 +386,4 @@ async function initApp() {
 
 // アプリケーションを起動
 initApp();
+
