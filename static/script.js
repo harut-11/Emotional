@@ -386,4 +386,3 @@ async function initApp() {
 
 // アプリケーションを起動
 initApp();
-
