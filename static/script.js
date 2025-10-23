@@ -14,7 +14,16 @@ const emotionPredictionContainer = document.getElementById('emotionPredictionCon
 const predictionResultDiv = document.getElementById('predictionResult');
 // トグルスイッチのDOM要素を取得 
 const postToTwitterToggle = document.getElementById('postToTwitterToggle'); 
+const textarea = document.getElementById('textContent');
+const count = document.getElementById('count');
+const max = +textarea.maxLength;
+let composing = false;
 
+textarea.addEventListener('compositionstart', () => composing = true);
+textarea.addEventListener('compositionend', () => { composing = false; limit(); });
+textarea.addEventListener('input', () => { if (!composing) limit(); });
+
+                            
 // グローバルなチャートインスタンスを保持するための変数
 let emotionChartInstance = null; 
 
@@ -43,7 +52,15 @@ function setFormSubmitting(isSubmitting) {
 function resetFormState() {
     setFormSubmitting(false);
 }
-
+function limit() {
+     if (textarea.value.length > max) {
+            const beforePos = textarea.selectionStart;
+            textarea.value = textarea.value.slice(0, max);
+            const newPos = Math.min(beforePos, textarea.value.length);
+            textarea.setSelectionRange(newPos, newPos);
+        }
+        count.textContent = textarea.value.length;
+}
 /**
  * 感情データをバックエンドAPIから取得する関数
  * @returns {Promise<Array>} 感情レコードの配列
