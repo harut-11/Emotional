@@ -25,7 +25,7 @@ h1 {
     margin-bottom: 5px;
 }
 
-/* 予測結果に置き換えるため、このpタグのデフォルトスタイルは影響しないよう調整 */
+
 p {
     text-align: center;
     color: #7f8c8d;
