@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>感情アーカイブ - 感情周期グラフ</title>
-    <link rel="stylesheet" href="static\style.css">
+    <link rel="stylesheet" href="static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -51,10 +51,16 @@
                     <form id="emotionForm" class="record-form">
                         <textarea maxlength="115" id="textContent" placeholder="今日の出来事や気分をテキストで記録（例：今日は寝坊した）※115文字以内" rows="4"></textarea>
                         <p><span id="count">0</span>/115</span></p>
-                        
-                        <div class="file-input-group">
-                            <label for="fileInput">写真を添付</label>
-                            <input type="file" id="fileInput" name="file" accept="image/*">
+                        <p style="text-align: left;">jpg、png、jpeg形式の画像を添付できます。</p>
+                        <div class="file-input-group" id="drop-zone">
+                            
+                            <label for="fileInput">
+                                写真を添付
+                            </label>
+                            <div id="imagePreviewContainer" class="image-preview-container">
+                                </div>
+                            <span class="drop-message">（ここにファイルをドラッグ＆ドロップ）</span>
+                            <input type="file" id="fileInput" name="file" accept="image/jpeg, image/png, image/gif, image/webp" style="display: none;">
                         </div>
 
                         <button type="submit" id="submitButton">感情を分析して記録する</button>
@@ -73,6 +79,6 @@
         </div>
         </div>
 
-    <script src="static\script.js"></script>
+    <script src="static/script.js"></script>
 </body>
 </html>
