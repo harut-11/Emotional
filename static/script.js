@@ -1,6 +1,6 @@
 const API_HISTORY_URL = '/emotion_history'; // 履歴取得API
 const API_ANALYZE_URL = '/analyze_emotion'; // 分析・記録API
-const API_PREDICT_URL = '/predict_emotion'; // 感情予測API (新規追加)
+const API_PREDICT_URL = '/predict_emotion'; // 感情予測API 
 
 const emotionForm = document.getElementById('emotionForm');     
 const submitButton = document.getElementById('submitButton');     
@@ -8,7 +8,6 @@ const messageArea = document.getElementById('messageArea');
 const historyList = document.getElementById('historyList'); 
 const tabButtons = document.querySelectorAll('.tabButton');   
 const noHistoryMessage = document.getElementById('noHistoryMessage'); 
-
 // 予測結果を表示するコンテナのDOM要素を定義
 const emotionPredictionContainer = document.getElementById('emotionPredictionContainer');
 const predictionResultDiv = document.getElementById('predictionResult');
@@ -16,16 +15,23 @@ const predictionResultDiv = document.getElementById('predictionResult');
 const postToTwitterToggle = document.getElementById('postToTwitterToggle'); 
 const textarea = document.getElementById('textContent');
 const count = document.getElementById('count');
-const max = +textarea.maxLength;
+// Twitterの文字数制限
+const TWITTER_MAX_LENGTH = 115;
+const maxCountNode = count.parentElement.lastChild;
+// ドロップゾーンとファイル入力要素を取得
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('fileInput');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
 let composing = false;
+// グローバルなチャートインスタンスを保持するための変数
+let emotionChartInstance = null; 
 
 textarea.addEventListener('compositionstart', () => composing = true);
 textarea.addEventListener('compositionend', () => { composing = false; limit(); });
 textarea.addEventListener('input', () => { if (!composing) limit(); });
-
-                            
-// グローバルなチャートインスタンスを保持するための変数
-let emotionChartInstance = null; 
+postToTwitterToggle.addEventListener('change', limit);
+limit();
 
 /**
  * メッセージエリアにフィードバックを表示する関数
@@ -53,14 +59,78 @@ function resetFormState() {
     setFormSubmitting(false);
 }
 function limit() {
-     if (textarea.value.length > max) {
+    const isTwitterPostEnabled = postToTwitterToggle.checked;
+    const currentLength = textarea.value.length;
+
+    if (isTwitterPostEnabled) {
+        // Twitter投稿がONの場合 (制限あり) 
+        textarea.setAttribute('maxlength', TWITTER_MAX_LENGTH); 
+        
+        if (currentLength > TWITTER_MAX_LENGTH) {
+            // 制限文字数を超えた場合、末尾をカット
             const beforePos = textarea.selectionStart;
-            textarea.value = textarea.value.slice(0, max);
+            textarea.value = textarea.value.slice(0, TWITTER_MAX_LENGTH);
             const newPos = Math.min(beforePos, textarea.value.length);
             textarea.setSelectionRange(newPos, newPos);
         }
-        count.textContent = textarea.value.length;
+        
+        // カウンター表示を更新 
+        count.textContent = textarea.value.length; 
+        maxCountNode.textContent = `/${TWITTER_MAX_LENGTH}`; 
+
+    } else {
+        // Twitter投稿がOFFの場合 (制限なし) 
+        textarea.removeAttribute('maxlength'); 
+        
+        // カウンター表示を更新 
+        count.textContent = currentLength;
+        maxCountNode.textContent = ''; // 最大文字数の表示 
+    }
 }
+
+/**
+ * 選択されたファイルのプレビューを表示します
+ * @param {FileList} files - fileInputから取得したFileList
+ */
+function displayImagePreview(files) {
+    // 既存のプレビューをクリア
+    imagePreviewContainer.innerHTML = '';
+    
+    if (files && files.length > 0) {
+        // 最初のファイル（画像）のみを処理
+        const file = files[0];
+        
+        // ファイルが画像であるか確認
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                // img要素を作成
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = '添付画像のプレビュー';
+                img.className = 'image-preview'; // スタイル適用のためクラスを設定
+                
+                // プレビューコンテナに追加
+                imagePreviewContainer.appendChild(img);
+                
+                // ドロップメッセージを非表示にする
+                document.querySelector('.drop-message').style.display = 'none';
+            };
+            
+            // ファイルを読み込み、Data URLとして結果を返します
+            reader.readAsDataURL(file);
+        } else {
+            // 画像以外のファイルが選択された場合の処理（必要に応じて）
+            // 例: メッセージ表示をクリア
+            showMessage('message-area', '');
+        }
+    } else {
+        // ファイルがない場合はドロップメッセージを表示
+        document.querySelector('.drop-message').style.display = 'inline-block';
+    }
+}
+
 /**
  * 感情データをバックエンドAPIから取得する関数
  * @returns {Promise<Array>} 感情レコードの配列
@@ -92,13 +162,6 @@ function drawEmotionChart(records) {
 
     // データを時系列順に並べ替える
     records.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-    const labels = records.map(record => {
-        const date = new Date(record.created_at);
-        // 時刻を含めて表示
-        // 修正: ここで日付と時刻の表示ロジックを変更
-        return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
-    });
     
     // --- グラフ表示を改善するための新しいラベル生成ロジック ---
     let lastDate = null; 
@@ -118,7 +181,6 @@ function drawEmotionChart(records) {
         }
         return label;
     });
-    // --- 新しいラベル生成ロジックここまで ---
 
     const happinessData = records.map(record => record.happiness);
     const angerData = records.map(record => record.anger);
@@ -128,7 +190,7 @@ function drawEmotionChart(records) {
     emotionChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            // labels: labels, // 従来のlabelsをimprovedLabelsに置き換える
+          
             labels: improvedLabels,
             datasets: [
                 {
@@ -251,7 +313,7 @@ function displayHistoryList(records) {
     historyList.innerHTML = '';
     noHistoryMessage.style.display = records.length === 0 ? 'block' : 'none';
 
-    // 降順に表示（最新の投稿を上にする）
+    // 降順に表示
     const reversedRecords = [...records].reverse();
 
     reversedRecords.forEach(record => {
@@ -318,10 +380,11 @@ emotionForm.addEventListener('submit', async (e) => {
        
             const twitterMsg = result.twitter_posted ? 'Twitterにも投稿されました。' : 'Twitterへの投稿はスキップされました。';
             showMessage('success', `感情の記録が完了しました！ 幸福度: ${result.happiness.toFixed(1)}, 怒り: ${result.anger.toFixed(1)} ${twitterMsg}`);
-            
             // フォームとファイル入力をリセット
             emotionForm.reset();
-            
+            // 文字カウントとプレビューもリセット
+            displayImagePreview(null);
+            limit();
             // グラフと予測を更新するため、分析タブを再初期化
             const records = await fetchEmotionData();
             drawEmotionChart(records);
@@ -330,6 +393,7 @@ emotionForm.addEventListener('submit', async (e) => {
         } else {
             throw new Error(result.error || '分析と記録に失敗しました。');
         }
+
     } catch (error) {
         console.error("記録エラー:", error);
         showMessage('error', `記録中にエラーが発生しました: ${error.message}`);
@@ -367,16 +431,85 @@ tabButtons.forEach(button => {
     });
 });
 
+// 1. ブラウザのデフォルト動作をキャンセルする関数
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+window.addEventListener('drop', preventFileOpen, false);
+window.addEventListener('dragover', preventFileOpen, false);
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function preventFileOpen(e) {
+    if (e.dataTransfer.items && [...e.dataTransfer.items].some(item => item.kind === 'file')) {
+        e.preventDefault();
+    }
+}
+
+// 2. ドラッグ時の見た目
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    dropZone.classList.add('dragover');
+}
+
+function unhighlight(e) {
+    dropZone.classList.remove('dragover');
+}
+
+// 3. ファイルがドロップされた時の処理
+dropZone.addEventListener('drop', handleDrop, false);
+
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length) {
+        fileInput.files = files;
+        
+        
+        displayImagePreview(files); 
+        
+        showMessage('success', `${files.length} 件のファイルをドロップしました。`);
+    } else {
+        showMessage('error', 'ファイルが見つかりませんでした。');
+}
+}
+
+// fileInputの変更イベントにリスナー
+fileInput.addEventListener('change', (e) => {
+
+    displayImagePreview(e.target.files);
+
+    if (e.target.files.length) {
+        showMessage('success', `${e.target.files.length} 件のファイルを選択しました。`);
+    } else {
+        showMessage('message-area', ''); // ファイルがクリアされたらメッセージもクリア
+    }
+});
+
+
 // アプリケーション起動時のメイン処理
 async function initApp() {
-    // 1. 感情データを取得
+    // 感情データを取得
     const records = await fetchEmotionData();
     
     // データがあればグラフを描画
     if (records && records.length > 0) {
         drawEmotionChart(records);
         
-        // **グラフ描画後、自動で感情予測を実行**
+        // グラフ描画後、自動で感情予測を実行
         fetchEmotionPrediction();
         
         // メッセージエリアのクリア
@@ -400,6 +533,7 @@ async function initApp() {
         if (noHistoryMessage) noHistoryMessage.style.display = 'block';
     }
 }
+
 
 // アプリケーションを起動
 initApp();
