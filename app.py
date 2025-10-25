@@ -111,7 +111,7 @@ def twitter_callback():
         user = api.verify_credentials()
         session['screen_name'] = user.screen_name
         
-        # request_tokenを削除
+       
         session.pop('request_token', None)
 
         return render_template('auth_success.html', screen_name=user.screen_name)
@@ -129,7 +129,6 @@ def twitter_status():
 
 
 # --- 感情分析＆記録エンドポイント ---
-
 def post_to_twitter(text, happiness, anger, image_file=None):
     """Twitterに投稿するヘルパー関数 (v1.1でメディアアップロード、v2でツイート)"""
     if 'access_token' not in session:
@@ -139,23 +138,23 @@ def post_to_twitter(text, happiness, anger, image_file=None):
         # 投稿メッセージを作成
         message = f"{text}\n\n#感情アーカイブ\n幸福度: {happiness:.1f}/10.0, 怒り: {anger:.1f}/10.0"
 
-        # --- v1.1 API でメディアをアップロード (メディアのIDを取得するためにv1.1を使用) ---
+        
         auth = get_twitter_auth_client()
         auth.set_access_token(session['access_token'], session['access_token_secret'])
-        api_v1 = API(auth) # v1.1 APIクライアント
+        api_v1 = API(auth) 
 
         media_ids = None
         if image_file:
-            # v1.1のmedia_uploadを使用して画像をアップロード
+            
             media = api_v1.media_upload(image_file)
-            media_ids = [media.media_id_string] # media_id_stringを取得
+            media_ids = [media.media_id_string] 
 
         # --- v2 API でツイートを投稿 ---
         client_v2 = get_twitter_v2_client()
         if not client_v2:
             raise Exception("Twitter V2クライアントの初期化に失敗しました。")
 
-        # ツイート (API v2のcreate_tweetを使用)
+        # ツイート 
         client_v2.create_tweet(text=message, media_ids=media_ids)
         return True
     except Exception as e:
@@ -178,7 +177,7 @@ def analyze_emotion():
     if image_file:
         # ファイル名をUUIDで安全に生成
         ext = image_file.filename.split('.')[-1]
-        if ext.lower() not in ['jpg', 'jpeg', 'png', 'gif']:
+        if ext.lower() not in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
              return jsonify({"error": "サポートされていない画像形式です。"}, 400)
              
         filename = f"{uuid.uuid4()}.{ext}"
@@ -293,9 +292,9 @@ def predict_emotion():
     if not records:
         return jsonify({"error": "予測に必要な感情データが不足しています（最低1件必要）。"}), 400
 
-    # データをJSON形式に変換（予測に必要なデータのみ抽出）
+    # データをJSON形式に変換
     history_data = []
-    # 取得した順序が降順なので、時系列順（昇順）に戻す
+    
     for record in reversed(records):
         history_data.append({
             'date': record.created_at.strftime('%Y-%m-%d %H:%M:%S'),
