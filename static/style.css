@@ -1,4 +1,3 @@
-/* style.css */
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f4f7f6;
@@ -25,7 +24,7 @@ h1 {
     margin-bottom: 5px;
 }
 
-
+/* 予測結果に置き換えるため、このpタグのデフォルトスタイルは影響しないよう調整 */
 p {
     text-align: center;
     color: #7f8c8d;
@@ -127,8 +126,31 @@ h2 {
 /* ファイル入力のスタイル */
 .file-input-group {
     display: flex;
-    align-items: center;
+    align-items: center; 
     margin-bottom: 15px;
+    border: 2px dashed #ccc; /* 点線ボーダー */
+    padding: 10px; 
+    border-radius: 8px; 
+    position: relative; 
+    background-color: #f9f9f9; 
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+
+.file-input-group.drag-over {
+    background-color: #eaf6ff; 
+    border-color: #001aff; /*ドロップ可能の範囲の色*/
+}
+
+/* ドロップゾーン */
+.drop-zone-hint {
+    font-size: 0.8em;
+    color: #7f8c8d;
+    position: absolute; 
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -15px; 
+    pointer-events: none; 
 }
 
 .file-input-group label {
@@ -148,6 +170,56 @@ h2 {
 
 .file-input-group input[type="file"] {
     display: none;
+}
+
+/* --- ファイル入力・プレビュー関連のスタイル --- */
+.image-preview-container {
+    margin: 10px 0; /* プレビューと他の要素の間にスペースを空ける */
+    text-align: center; /* 画像を中央に寄せる */
+    max-height: 200px; /* プレビュー画像の最大高さを制限 */
+    overflow: hidden; /* 高さを超える部分は非表示 */
+}
+
+.image-preview {
+    max-width: 100%; /* 親要素の幅を超えないようにする */
+    max-height: 100px; /* プレビュー画像の最大高さを制限 */
+    border-radius: 8px; /* 角を丸くする */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 影を付けて見やすくする */
+    object-fit: contain; /* アスペクト比を維持しつつコンテナに収める */
+}
+
+/* ドロップゾーンのための新しいスタイル */
+.file-input-group {
+    position: relative;
+    padding: 15px; /* ドロップエリアのサイズを確保 */
+    border: 2px dashed #ccc; /* 破線でドロップエリアを表現 */
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+    margin-bottom: 20px;
+    cursor: pointer; /* クリック可能であることを示唆 */
+}
+
+/* 通常のラベルのスタイルを調整 */
+.file-input-group label {
+    display: block;
+    margin: 0;
+    font-weight: bold;
+    color: #ffffff; /* メインカラーを使用 */
+}
+
+/* ドロップゾーンにファイルがドラッグされてきたときのハイライト */
+.file-input-group.dragover {
+    background-color: #bdddff; /* 薄いグリーン系の背景色 */
+    border-color: #0011ff; /* 濃いグリーン系の破線 */
+}
+
+/* ドロップを促すメッセージのスタイル */
+.drop-message {
+    display: block;
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin-top: 5px;
 }
 
 /* メッセージエリア */
