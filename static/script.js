@@ -63,6 +63,8 @@ function limit() {
     const currentLength = textarea.value.length;
 
     if (isTwitterPostEnabled) {
+
+        textarea.placeholder = '今日の出来事や気分をテキストで記録（例：今日は寝坊した）※115文字以内';
         // Twitter投稿がONの場合 (制限あり) 
         textarea.setAttribute('maxlength', TWITTER_MAX_LENGTH); 
         
@@ -70,6 +72,7 @@ function limit() {
             // 制限文字数を超えた場合、末尾をカット
             const beforePos = textarea.selectionStart;
             textarea.value = textarea.value.slice(0, TWITTER_MAX_LENGTH);
+            // カット後のカーソル位置を調整
             const newPos = Math.min(beforePos, textarea.value.length);
             textarea.setSelectionRange(newPos, newPos);
         }
@@ -79,9 +82,10 @@ function limit() {
         maxCountNode.textContent = `/${TWITTER_MAX_LENGTH}`; 
 
     } else {
+
+        textarea.placeholder = '今日の出来事や気分をテキストで記録（例：今日は寝坊した）';
         // Twitter投稿がOFFの場合 (制限なし) 
         textarea.removeAttribute('maxlength'); 
-        
         // カウンター表示を更新 
         count.textContent = currentLength;
         maxCountNode.textContent = ''; // 最大文字数の表示 
@@ -313,7 +317,7 @@ function displayHistoryList(records) {
     historyList.innerHTML = '';
     noHistoryMessage.style.display = records.length === 0 ? 'block' : 'none';
 
-    // 降順に表示
+    // 降順に表示（最新の投稿を上にする）
     const reversedRecords = [...records].reverse();
 
     reversedRecords.forEach(record => {
@@ -435,7 +439,7 @@ tabButtons.forEach(button => {
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     dropZone.addEventListener(eventName, preventDefaults, false);
 });
-
+// ウィンドウ全体でファイルを開くデフォルト動作を防止
 window.addEventListener('drop', preventFileOpen, false);
 window.addEventListener('dragover', preventFileOpen, false);
 
@@ -502,14 +506,14 @@ fileInput.addEventListener('change', (e) => {
 
 // アプリケーション起動時のメイン処理
 async function initApp() {
-    // 感情データを取得
+    // 1. 感情データを取得
     const records = await fetchEmotionData();
     
     // データがあればグラフを描画
     if (records && records.length > 0) {
         drawEmotionChart(records);
         
-        // グラフ描画後、自動で感情予測を実行
+        // **グラフ描画後、自動で感情予測を実行**
         fetchEmotionPrediction();
         
         // メッセージエリアのクリア
