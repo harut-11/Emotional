@@ -3,14 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>感情アーカイブ - 感情周期グラフ</title>
+    <title>感情アーカイブ</title>
     <link rel="stylesheet" href="static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>感情周期グラフ</h1>
+
+<div id="modalOverlay" class="modal-overlay" style="display:none;"></div>
+
+<div id="operationModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h1>利用規約</h1>
+    <div class="modal-body" id ="modalBody">
+        <h2>1. 本サービスについて</h2>
+        <p>・本サービス「感情アーカイブ」は、ユーザーが投稿したテキストおよび画像を、AI（Google Gemini API）を用いて分析し、感情データを記録・視覚化するサービスです。</p>
+        <p>・また、記録されたデータに基づき、将来の感情傾向の予測や、Twitter（X）への投稿機能を提供します。</p>
+        <p><b>【重要】Twitter（X）への自動投稿機能は、Twitter（X）社のAPI利用規約や技術的な制限に基づき、投稿回数や内容に制限がかかる場合や、予告なく機能が停止する場合があります。</b></p>
+
+        <h2>2. 利用環境について</h2>
+        <p>・本サービスの利用には、安定したインターネット接続環境が必要です。</p>
+        <p>・快適なご利用のため、最新版のGoogle Chromeブラウザを推奨します。</p>
         
+        <h2>3. プライバシーとデータの取り扱い</h2>
+        <p>・本サービスは、氏名やメールアドレスなど、ユーザーを直接特定する個人情報は収集しません。</p>
+        <p>・投稿コンテンツは、感情分析のためにGoogle社のAIモデル（Gemini API）に送信されます。</p>
+        <p>・投稿コンテンツおよびAIによる分析結果は、本サービスの「投稿履歴」機能の提供のため、サーバー上のデータベースに保存されます。</p>
+        <p>・Twitter連携機能を利用する場合、本サービスはTwitterの認証に必要な情報（アクセストークン等）をセッションに一時的に保存しますが、パスワードを保存することはありません。</p>
+        <p>・収集したデータは、サービスの改善や統計分析のために、個人を特定できない形で利用する場合があります。</p>
+
+        <h2>4. 投稿コンテンツの権利</h2>
+        <p>・投稿コンテンツの著作権は、投稿したユーザー本人に帰属します。</p>
+        <p>・ユーザーは、本サービスに対し、投稿コンテンツを「感情分析」「履歴表示」など、本サービスの提供に必要な範囲において、無償で利用（複製、分析、表示）することを許諾するものとします。</p>
+
+        <h2>5. 禁止事項</h2>
+        <p>本サービスの利用にあたり、以下の行為を禁止します。</p>
+        <p>・法令または公序良俗に違反する内容の投稿</p>
+        <p>・他者の著作権、プライバシー、名誉、その他の権利を侵害する内容の投稿</p>
+        <p>・他者を誹謗中傷する、脅迫的、わいせつ、または過度に暴力的な内容の投稿</p>
+        <p>・本サービスのサーバーやネットワーク機能に過度な負荷をかける行為、または不正アクセスを試みる行為</p>
+        <p>・その他、運営者が不適切と判断する行為</p>
+
+        <h2>6. 免責事項</h2>
+        <p>・本サービスが提供するAIによる感情分析および感情予測の結果は、あくまで参考情報であり、その正確性、完全性、有用性を保証するものではありません。</p>
+        <p>・本サービスが提供する情報は、医学的診断、心理カウンセリング、その他専門的な助言に代わるものではありません。心身の健康に関する深刻な悩みについては、必ず専門家にご相談ください。</p>
+        <p>・ユーザーは、本サービス（Twitter連携機能を含む）を自己の責任において利用するものとし、本サービスの利用によって生じたいかなる損害（データの消失、Twitter投稿によるトラブル等を含む）についても、運営者は一切の責任を負いません。</p>
+        <p>・運営者は、保守、障害、またはその他の理由により、ユーザーへの事前の通知なく本サービスの提供を一時的に中断、または永久に停止する場合があります。</p>
+
+        <h2>7. 本規約の変更</h2>
+        <p>・運営者は、必要と判断した場合、ユーザーの承諾を得ることなく本規約を変更できるものとします。</p>
+        <p>・変更後の規約は、本サービス上に表示された時点から効力を生じるものとします。</p>
+
+        <h2>7.お問い合わせについて</h2>
+        <p>・本サービスに関するお問い合わせは、はるとまで</p>
+    </div>
+    <div class="modal-footer">
+      <button id="closeModalBtn" style="display:none;">閉じる</button>
+    </div>
+  </div>
+</div>
+<button id="howToUseBtn" class="operation-button">使用方法</button>
+<div id="howToUseModal" class="modal modal-left" style="display:none;">
+  <div class="modal-content">
+    <span id="closeHowToUseModalBtn" class="close-how-to-use">&times;</span>
+    <h1>操作方法</h1>
+    <div class="modal-body">
+        <ol class="operation-steps">
+            <li>
+                <strong>キモチを記録してみよう</strong><br>
+                「分析」タブ（今見ている画面です）の入力欄に、今日あったことや感じたことを自由に入力してください。
+                <br>
+                「写真を添付」ボタンから、その時の写真を選ぶこともできます。
+            </li>
+            <li>
+                <strong>「分析して記録」ボタンを押す</strong><br>
+                入力が終わったら、一番下の「感情を分析して記録する」ボタンを押してください。AIがあなたの文章や写真を分析し、「幸福」や「怒り」がどれくらいかをグラフにして保存します。
+            </li>
+            <li>
+                <strong>あとから見返す</strong><br>
+                画面の上にある「投稿」タブを押すと、これまでに記録した日記（キモチ）の一覧が見られます。「あの時、こんなキモチだったんだな」と、グラフと一緒に振り返ることができます。
+            </li>
+            <li>
+                <strong>AIからのアドバイス</strong><br>
+                日記の記録がたまってくると、「分析」タブの上の方に、AIがあなたのキモチの傾向を分析した「感情予測」が表示されるようになります。
+            </li>
+            <li>
+                <strong>Twitter (X) に投稿する</strong><br>
+                もしTwitter (X) にも記録を投稿したい場合は、画面にある「Twitter連携」ボタンから設定できます。連携すると、日記を記録するときに「Twitterにも投稿する」スイッチが使えるようになります。
+            </li>
+        </ol>
+    </div>
+  </div>
+</div>
+    <div class="container">
+        <h1>
+            <img src="static/image/AI.png" alt="AI icon" class="h1-icon">
+            感情アーカイブ
+        </h1>
         <div id="emotionPredictionContainer" class="emotion-prediction">
             <div id="predictionResult">
                 <p class="auth-message">過去の感情の推移を可視化。未来の「感情の天気予報」を分析しています...</p>
@@ -18,8 +106,9 @@
         </div>
         
         <div class="tabs">
-            <button class="tabButton" data-target="post-history">投稿</button>
             <button class="tabButton active" data-target="analysis-chart">分析</button>
+            <button class="tabButton" data-target="post-history">投稿</button>
+            <!--<button class="tabButton post">まとめて投稿</button>-->
         </div>
         <div class="tab-content-container">
             <div id="analysis-chart" class="tab-content active">
