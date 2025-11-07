@@ -1,3 +1,4 @@
+
 import os
 import json
 import io
@@ -136,7 +137,7 @@ def post_to_twitter(text, happiness, anger, image_file=None):
     
     try:
         # 投稿メッセージを作成
-        message = f"{text}\n\n#感情アーカイブ\n幸福度: {happiness:.1f}/10.0, 怒り: {anger:.1f}/10.0"
+        message = f"{text}\n\n#感情アーカイブ\nポジティブ: {happiness:.1f}/10.0, ネガティブ: {anger:.1f}/10.0"
 
         
         auth = get_twitter_auth_client()
@@ -324,7 +325,7 @@ def predict_emotion():
         "提供された過去の感情履歴データ（JSON形式）を分析し、**今後3日以内**に予測されるユーザーの「感情の天気予報」をJSON形式で出力してください。\n"
         "\n"
         "【重要】分析の指針:\n"
-        "1.  **傾向の特定:** 過去データの「幸福度」と「怒り」の推移から、周期性（例: 週末に幸福度が上がる）、最近の傾向（例: 怒りが上昇傾向）、特定のイベント（例: 怒りが急上昇した日）を特定してください。\n"
+        "1.  **傾向の特定:** 過去データの「ポジティブ」と「ネガティブ」の推移から、周期性（例: 週末に幸福度が上がる）、最近の傾向（例: 怒りが上昇傾向）、特定のイベント（例: 怒りが急上昇した日）を特定してください。\n"
         "2.  **根拠のある予測:** 特定した傾向に基づき、今後3日以内（データ最終日の翌日以降）の感情の**平均的な状態**を予測してください。予測スコアは0.0から10.0の範囲（浮動小数点数）とします。\n"
         "3.  **具体的かつ実行可能なアドバイス:** 予測結果に基づき、ユーザーがより良い感情状態で過ごすための、**具体的で実行可能（actionable）**なアドバイスを**2〜3個**提案してください。（例: 「怒りが高まりそうなので、深呼吸する時間を作ってください」「幸福度が高い傾向なので、新しいことに挑戦してみましょう」など）\n"
         "4.  **サマリーの記述:** 予測の**根拠となった傾向**（なぜその予測になったのか）を「tendency_summary」として簡潔に説明してください。\n"
@@ -377,6 +378,19 @@ def index():
 def serve_image(filename):
     """アップロードされた画像を返す"""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# --- Twitter連携状態チェックAPI ---
+@app.route("/auth/status")
+def auth_status():
+    """フロントエンドから呼び出されるTwitter認証状態チェック"""
+    if 'access_token' in session and 'screen_name' in session:
+        return jsonify({
+            "authenticated": True,
+            "screen_name": session["screen_name"]
+        })
+    else:
+        return jsonify({"authenticated": False})
+
 
 if __name__ == '__main__':
     # データベースの初期化
