@@ -1,3 +1,4 @@
+/* style.css */
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f4f7f6;
@@ -20,8 +21,17 @@ body {
 
 h1 {
     color: #2c3e50;
-    text-align: center;
+    /*text-align: center;*/
     margin-bottom: 5px;
+    display: flex;         /* Flexboxコンテナとして設定 */
+    align-items: center;
+    justify-content: center;
+}
+    
+.h1-icon {
+    width: 40px;  /* アイコンの幅 */
+    height: 40px; /* アイコンの高さ */
+    margin-right: 5px; /* テキストとの間隔 */
 }
 
 /* 予測結果に置き換えるため、このpタグのデフォルトスタイルは影響しないよう調整 */
@@ -81,7 +91,43 @@ h2 {
 .tab-content.active {
     display: block;
 }
+#howToUseBtn {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 8; /* オーバーレイ(9)より下 */
+    background-color: #3498db;
+    color: rgb(255, 255, 255);
+    border: none;
+    border-radius: 8px;
+    width: 140px;
+    height: 40px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+}
 
+#howToUseBtn:hover {
+    background-color: #2980b9;
+}
+.close-how-to-use {
+  position: absolute;
+  top: 10px;      
+  right: 10px;       
+  color: #000000;      /* ボタンの色 */
+  font-size: 28px;  /* 文字の大きさ */
+  font-weight: bold;
+  cursor: pointer;  /* マウスカーソルをポインターに */
+  line-height: 1;   /* 行の高さを調整 */
+}
+
+.close-how-to-use:hover,
+.close-how-to-use:focus {
+  color: #333; /* ホバー時に色を濃くする */
+  text-decoration: none;
+}
 /* --- データ入力フォーム --- */
 .data-input {
     margin-top: 40px;
@@ -396,19 +442,20 @@ h2 {
     border: 1px solid #e74c3c;
 }
 
+
 .prediction-summary {
     font-style: italic;
-    color: #7f8c8d;
+    color: #000000;
     margin: 15px 0;
     padding: 10px;
     border-left: 3px solid #f39c12; /* オレンジの強調 */
-    background-color: #fef0db;
+    background-color: #f7f9fb;
 }
 
 .advice-section {
     margin-top: 20px;
     padding: 10px;
-    background-color: #f7f9fb;
+    background-color: #fef0db;
     border-radius: 5px;
 }
 
@@ -505,6 +552,104 @@ h2 {
 /* ONになった時のボタンの位置 */
 .twitter-post-toggle-section input[type="checkbox"]:checked + .switch:before {
     transform: translateX(25px); 
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.664);
+  border: 1px solid #ccc;
+  padding: 15px;
+  z-index: 1000;
+  height: 750px;
+  width: 550px;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+  border-radius: 8px;
+  overflow-y: auto;
+  
+  
+  
+}
+#modalBody h2 {
+    color: #000; 
+    
+}
+#modalBody p {
+    color: #000000; 
+    line-height: 1.5;
+    text-align: left;
+}
+.modal-body p b {
+  color: red;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.847); /* 黒背景に少し透明感 */
+  z-index: 9; /* モーダルより一段下に表示 */
+}
+
+
+.modal-content {
+  
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
+  overflow-y: auto;
+  flex-grow: 1;
+  text-align: left;
+  padding-right: 5px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: center;
+  padding: 30px;
+  border-top: 1px solid #ccc;
+}
+
+
+#closeModalBtn {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  font-size: 15px;
+  width: 100px;
+  height: 50px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#closeModalBtn:hover {
+  background-color: #218838;
+}
+
+.modal.modal-left {
+    top: 0;
+    left: 0;
+    transform: none; /* 中央寄せを解除 */
+    width: 90%;
+    max-width: 450px; /* 幅を調整 */
+    height: 100vh; /* 画面の高さ一杯に */
+    border-radius: 0; /* 角丸をなくす */
+}
+.operation-steps {
+    padding-left: 25px; /* 番号が見えるように調整 */
+    font-size: 16px;
+    line-height: 1.8;
+    margin-top: 20px;
+}
+.operation-steps li {
+    margin-bottom: 15px; /* 各ステップの間に余白 */
 }
 /* --- レスポンシブデザイン --- */
 @media (max-width: 600px) {
