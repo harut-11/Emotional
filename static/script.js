@@ -22,6 +22,9 @@ const maxCountNode = count.parentElement.lastChild;
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('fileInput');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+const howToUseBtn = document.getElementById('howToUseBtn');
+const howToUseModal = document.getElementById('howToUseModal');
+const closeHowToUseModalBtn = document.getElementById('closeHowToUseModalBtn');
 
 let composing = false;
 // グローバルなチャートインスタンスを保持するための変数
@@ -198,7 +201,7 @@ function drawEmotionChart(records) {
             labels: improvedLabels,
             datasets: [
                 {
-                    label: '幸福度 (Happiness)',
+                    label: 'ポジティブ',
                     data: happinessData,
                     borderColor: 'rgb(52, 152, 219)', 
                     backgroundColor: 'rgba(52, 152, 219, 0.2)',
@@ -208,7 +211,7 @@ function drawEmotionChart(records) {
                     pointHoverRadius: 7
                 },
                 {
-                    label: '怒りレベル (Anger)',
+                    label: 'ネガティブ',
                     data: angerData,
                     borderColor: 'rgb(231, 76, 60)', 
                     backgroundColor: 'rgba(231, 76, 60, 0.2)',
@@ -244,7 +247,7 @@ function drawEmotionChart(records) {
                 },
                 title: {
                     display: true,
-                    text: '感情の推移 (時系列)'
+                    text: '感情の推移'
                 }
             }
         }
@@ -293,8 +296,8 @@ function displayPredictionResult(prediction) {
         <div class="prediction-box">
             <h3 class="prediction-title">感情の天気予報（${prediction.prediction_date}頃の予測）</h3>
             <div class="prediction-scores">
-                <p class="score-item happiness-score">幸福度: <strong>${prediction.predicted_happiness.toFixed(1)}</strong> / 10.0</p>
-                <p class="score-item anger-score">怒りレベル: <strong>${prediction.predicted_anger.toFixed(1)}</strong> / 10.0</p>
+                <p class="score-item happiness-score">ポジティブ: <strong>${prediction.predicted_happiness.toFixed(1)}</strong> / 10.0</p>
+                <p class="score-item anger-score">ネガティブ: <strong>${prediction.predicted_anger.toFixed(1)}</strong> / 10.0</p>
             </div>
             
             <p class="prediction-summary">${prediction.tendency_summary}</p>
@@ -331,8 +334,8 @@ function displayHistoryList(records) {
         li.innerHTML = `
             <div class="history-item-meta">
                 <span class="history-date">${record.created_at}</span>
-                <span class="history-emotion-score happiness ${happinessColor}">幸福度: ${record.happiness.toFixed(1)}</span>
-                <span class="history-emotion-score anger ${angerColor}">怒り: ${record.anger.toFixed(1)}</span>
+                <span class="history-emotion-score happiness ${happinessColor}">ポジティブ: ${record.happiness.toFixed(1)}</span>
+                <span class="history-emotion-score anger ${angerColor}">ネガティブ: ${record.anger.toFixed(1)}</span>
             </div>
             <p class="history-text">${record.text_content}</p>
             ${record.image_path ? `
@@ -383,7 +386,7 @@ emotionForm.addEventListener('submit', async (e) => {
         if (response.ok && result.status === 'success') {
        
             const twitterMsg = result.twitter_posted ? 'Twitterにも投稿されました。' : 'Twitterへの投稿はスキップされました。';
-            showMessage('success', `感情の記録が完了しました！ 幸福度: ${result.happiness.toFixed(1)}, 怒り: ${result.anger.toFixed(1)} ${twitterMsg}`);
+            showMessage('success', `感情の記録が完了しました！ ポジティブ: ${result.happiness.toFixed(1)}, ネガティブ: ${result.anger.toFixed(1)} ${twitterMsg}`);
             // フォームとファイル入力をリセット
             emotionForm.reset();
             // 文字カウントとプレビューもリセット
@@ -537,6 +540,127 @@ async function initApp() {
         if (noHistoryMessage) noHistoryMessage.style.display = 'block';
     }
 }
+// --- Twitter連携状態チェック処理 ---
+async function checkTwitterAuthStatus() {
+    try {
+        const response = await fetch('/auth/status'); // ← サーバーでTwitter認証状態を返すエンドポイントを用意
+        const result = await response.json();
+
+        const twitterAuthButton = document.getElementById('twitterAuthButton');
+        const twitterAuthStatusMessage = document.getElementById('twitterAuthStatusMessage');
+        const postToTwitterToggle = document.getElementById('postToTwitterToggle');
+
+        if (result.authenticated) {
+            // ✅ 連携済み：ボタンの表示を変更
+            twitterAuthButton.textContent = 'Twitter連携済み ✔';
+            twitterAuthButton.disabled = true;
+            twitterAuthButton.classList.add('connected');
+            twitterAuthStatusMessage.textContent = 'Twitterアカウントが連携されています。投稿時に自動ツイートされます。';
+            
+            // トグルスイッチを有効化
+            postToTwitterToggle.disabled = false;
+        } else {
+            // ❌ 未連携：連携を促す
+            twitterAuthButton.textContent = 'Twitterアカウントを連携する';
+            twitterAuthButton.disabled = false;
+            twitterAuthButton.classList.remove('connected');
+            twitterAuthStatusMessage.textContent = 'Twitterアカウントを連携すると、記録と同時に自動投稿されます。';
+
+            // トグルスイッチを無効化＆OFFに
+            postToTwitterToggle.checked = false;
+            postToTwitterToggle.disabled = true;
+        }
+    } catch (error) {
+        console.error('Twitter認証状態の取得エラー:', error);
+    }
+}
+// Cookieを設定する関数
+function setCookie(name, value, days) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = name + "=" + value + ";" + expires + ";path=/";
+}
+
+// Cookieを取得する関数
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+// モーダルの表示とスクロール検出
+window.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('operationModal');
+  const modalBody = document.getElementById('modalBody');
+  const closeBtn = document.getElementById('closeModalBtn');
+  const overlay = document.getElementById('modalOverlay');
+
+  // Cookieで初回表示かどうかを判定
+  const hasSeenModal = getCookie('seenModal');
+
+  // Cookieが無い場合のみモーダルを表示
+  if (!hasSeenModal && modal && overlay) {
+    modal.style.display = 'block';
+    overlay.style.display = 'block';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modalBody.scrollTop = 0;
+  }
+
+  // スクロールで閉じるボタンを出す処理
+  modalBody.addEventListener('scroll', () => {
+    const isBottom = modalBody.scrollTop + modalBody.clientHeight >= modalBody.scrollHeight - 5;
+    if (isBottom) {
+      closeBtn.style.display = 'block';
+    }
+  });
+
+  // 閉じるボタンを押したときにCookie保存
+  closeBtn.addEventListener('click', () => {
+    modal.style.display = 'none';
+    overlay.style.display = 'none';
+
+    // モーダルを閉じたことを記録（365日間有効）
+    setCookie('seenModal', 'true', 365);
+  });
+
+  
+
+ 
+});
+
+
+// 「使い方」ボタンがクリックされたら、モーダルを表示
+if (howToUseBtn && howToUseModal) {
+  howToUseBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+
+  
+    howToUseModal.style.display = 'block'; 
+  });
+}
+
+// 「✕」ボタンがクリックされたら、モーダルを非表示
+if (closeHowToUseModalBtn && howToUseModal) {
+  closeHowToUseModalBtn.addEventListener('click', () => {
+
+    
+    howToUseModal.style.display = 'none';
+  });
+}
+
+
+
+
+// アプリ起動時にチェック
+checkTwitterAuthStatus();
 
 
 // アプリケーションを起動
