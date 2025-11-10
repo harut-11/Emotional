@@ -109,8 +109,8 @@ TWITTER_API_SECRET=あなたのConsumer Secret (API Secret)
 
 
     ```batch
-    rem 'server.js' があるフォルダに移動します
-    cd /d "C:\Emotional" ←　ここをあなたのフォルダパスに変更してください
+    rem 
+    cd /d "C:\Emotional" ←　ここをあなたのプロジェクトのフォルダパスに変更してください
     ```
 
 4.  `"C:\Emotional"` の部分を、あなたがこのプロジェクトを保存した**実際のフォルダパス**に書き換えてください。
