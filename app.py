@@ -397,3 +397,20 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+    
+
+if __name__ == '__main__':
+    import threading
+    import webbrowser
+
+    port = 5000
+    url = f"http://127.0.0.1:{port}"
+
+    # Flaskが起動した直後にブラウザを開く（別スレッドで実行）
+    threading.Timer(1.0, lambda: webbrowser.open_new(url)).start()
+
+    # データベースの初期化
+    with app.app_context():
+        db.create_all()
+
+    app.run(debug=True, port=port)
