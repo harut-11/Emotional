@@ -29,6 +29,9 @@ const closeHowToUseModalBtn = document.getElementById('closeHowToUseModalBtn');
 let composing = false;
 // グローバルなチャートインスタンスを保持するための変数
 let emotionChartInstance = null; 
+//twitter投稿回数制限
+let remainingCount = 10;
+let  = true;
 
 textarea.addEventListener('compositionstart', () => composing = true);
 textarea.addEventListener('compositionend', () => { composing = false; limit(); });
@@ -96,7 +99,7 @@ function limit() {
 }
 
 /**
- * 選択されたファイルのプレビューを表示します
+ * 選択されたファイルのプレビューを表示
  * @param {FileList} files - fileInputから取得したFileList
  */
 function displayImagePreview(files) {
@@ -118,18 +121,17 @@ function displayImagePreview(files) {
                 img.alt = '添付画像のプレビュー';
                 img.className = 'image-preview'; // スタイル適用のためクラスを設定
                 
-                // プレビューコンテナに追加
+                
                 imagePreviewContainer.appendChild(img);
                 
                 // ドロップメッセージを非表示にする
                 document.querySelector('.drop-message').style.display = 'none';
             };
             
-            // ファイルを読み込み、Data URLとして結果を返します
+            // ファイルを読み込み、Data URLとして結果を返す
             reader.readAsDataURL(file);
         } else {
-            // 画像以外のファイルが選択された場合の処理（必要に応じて）
-            // 例: メッセージ表示をクリア
+            // 画像以外のファイルが選択された場合の処理
             showMessage('message-area', '');
         }
     } else {
@@ -207,7 +209,7 @@ function drawEmotionChart(records) {
                     backgroundColor: 'rgba(52, 152, 219, 0.2)',
                     fill: false,
                     tension: 0.1,
-                    pointRadius: 5, // ポイントを大きく
+                    pointRadius: 5, 
                     pointHoverRadius: 7
                 },
                 {
@@ -217,7 +219,7 @@ function drawEmotionChart(records) {
                     backgroundColor: 'rgba(231, 76, 60, 0.2)',
                     fill: false,
                     tension: 0.1,
-                    pointRadius: 5, // ポイントを大きく
+                    pointRadius: 5, 
                     pointHoverRadius: 7
                 }
             ]
@@ -320,7 +322,7 @@ function displayHistoryList(records) {
     historyList.innerHTML = '';
     noHistoryMessage.style.display = records.length === 0 ? 'block' : 'none';
 
-    // 降順に表示（最新の投稿を上にする）
+    // 降順に表示
     const reversedRecords = [...records].reverse();
 
     reversedRecords.forEach(record => {
@@ -357,7 +359,6 @@ emotionForm.addEventListener('submit', async (e) => {
     const textContent = document.getElementById('textContent').value.trim();
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
-    // トグルスイッチの状態を取得 
     const shouldPostToTwitter = postToTwitterToggle.checked;
 
     if (!textContent && !file) {
@@ -371,8 +372,6 @@ emotionForm.addEventListener('submit', async (e) => {
     if (file) {
         formData.append('file', file);
     }
-
-    // フォームデータにトグルスイッチの状態を追加 
     formData.append('post_to_twitter', shouldPostToTwitter);
 
     try {
@@ -385,8 +384,41 @@ emotionForm.addEventListener('submit', async (e) => {
 
         if (response.ok && result.status === 'success') {
        
-            const twitterMsg = result.twitter_posted ? 'Twitterにも投稿されました。' : 'Twitterへの投稿はスキップされました。';
-            showMessage('success', `感情の記録が完了しました！ ポジティブ: ${result.happiness.toFixed(1)}, ネガティブ: ${result.anger.toFixed(1)} ${twitterMsg}`);
+            // サーバーからの残り回数を信頼する 
+            
+            // サーバーから返された最新の残り回数をグローバル変数に反映
+            if (result.remaining_uses !== null && result.remaining_uses !== undefined) {
+                remainingCount = result.remaining_uses;
+                canPostToTwitter = remainingCount > 0;
+            }
+
+            // メッセージを生成
+            const twitterMsg = result.twitter_posted ? 'Twitterにも投稿されました。' : (shouldPostToTwitter ? 'Twitter連携はONでしたが投稿に失敗しました。' : 'Twitterへの投稿はスキップされました。');
+            
+            let successMessage = `感情の記録が完了しました！ 幸福度: ${result.happiness.toFixed(1)}, 怒り: ${result.anger.toFixed(1)} ${twitterMsg}`;
+            
+            if (shouldPostToTwitter && result.twitter_posted) {
+                 successMessage += ` (残りTwitter投稿可能回数: ${remainingCount}回)`;
+            }
+            
+            showMessage('success', successMessage);
+
+            // 連携状態表示を最新の回数で更新 
+            const twitterAuthStatusMessage = document.getElementById('twitterAuthStatusMessage');
+            if (document.getElementById('twitterAuthButton').classList.contains('connected')) { // 連携済みの時だけ
+                twitterAuthStatusMessage.textContent = `Twitterアカウントが連携されています。（本日の残り投稿可能回数: ${remainingCount} 回）`;
+                
+                if (!canPostToTwitter) {
+                    // 回数が0になった場合、トグルを無効化
+                    postToTwitterToggle.checked = false;
+                    postToTwitterToggle.disabled = true;
+                    twitterAuthStatusMessage.textContent += ' 上限に達したため、現在は投稿できません。';
+                    
+                    // 投稿直後に回数が0になった場合の追加メッセージ
+                    showMessage('info', '本日のTwitter自動投稿上限（10回）に達しました。明日まで自動投稿は無効になります。');
+                }
+            }
+                
             // フォームとファイル入力をリセット
             emotionForm.reset();
             // 文字カウントとプレビューもリセット
@@ -398,7 +430,24 @@ emotionForm.addEventListener('submit', async (e) => {
             fetchEmotionPrediction(); 
 
         } else {
-            throw new Error(result.error || '分析と記録に失敗しました。');
+            // 429 のエラーハンドリング
+            if (response.status === 429 && result.message) {
+                 showMessage('error', `${result.error} ${result.message}`);
+                 // 回数が0なのでトグルを無効化する
+                 canPostToTwitter = false;
+                 remainingCount = 0;
+                 postToTwitterToggle.checked = false;
+                 postToTwitterToggle.disabled = true;
+                 
+                 // 連携状態メッセージも更新
+                 const twitterAuthStatusMessage = document.getElementById('twitterAuthStatusMessage');
+                 if (document.getElementById('twitterAuthButton').classList.contains('connected')) {
+                     twitterAuthStatusMessage.textContent = `Twitterアカウントが連携されています。（本日の残り投稿可能回数: 0 回） 上限に達したため、現在は投稿できません。`;
+                 }
+                 
+            } else {
+                throw new Error(result.error || '分析と記録に失敗しました。');
+            }
         }
 
     } catch (error) {
@@ -408,7 +457,6 @@ emotionForm.addEventListener('submit', async (e) => {
         resetFormState();
     }
 });
-
 
 // --- タブ切り替えロジック ---
 tabButtons.forEach(button => {
@@ -543,24 +591,38 @@ async function initApp() {
 // --- Twitter連携状態チェック処理 ---
 async function checkTwitterAuthStatus() {
     try {
-        const response = await fetch('/auth/status'); // ← サーバーでTwitter認証状態を返すエンドポイントを用意
+        const response = await fetch('/auth/status'); 
         const result = await response.json();
 
         const twitterAuthButton = document.getElementById('twitterAuthButton');
         const twitterAuthStatusMessage = document.getElementById('twitterAuthStatusMessage');
         const postToTwitterToggle = document.getElementById('postToTwitterToggle');
 
+
+        // APIから取得した残り回数をグローバル変数に設定
+        remainingCount = result.remaining_uses || 0; 
+        canPostToTwitter = remainingCount > 0;
+
         if (result.authenticated) {
-            // ✅ 連携済み：ボタンの表示を変更
+            //  連携済み
             twitterAuthButton.textContent = 'Twitter連携済み ✔';
             twitterAuthButton.disabled = true;
             twitterAuthButton.classList.add('connected');
-            twitterAuthStatusMessage.textContent = 'Twitterアカウントが連携されています。投稿時に自動ツイートされます。';
             
-            // トグルスイッチを有効化
-            postToTwitterToggle.disabled = false;
+            // 残り回数をメッセージに表示
+            twitterAuthStatusMessage.textContent = `Twitterアカウントが連携されています。（本日の残り投稿可能回数: ${remainingCount} 回）`;
+            
+            // 回数が0ならトグルを無効化
+            if (canPostToTwitter) {
+                postToTwitterToggle.disabled = false;
+            } else {
+                postToTwitterToggle.disabled = true;
+                postToTwitterToggle.checked = false; // 回数が0なら強制的にOFF
+                twitterAuthStatusMessage.textContent += ' 上限に達したため、現在は投稿できません。';
+            }
+            
         } else {
-            // ❌ 未連携：連携を促す
+            //  未連携
             twitterAuthButton.textContent = 'Twitterアカウントを連携する';
             twitterAuthButton.disabled = false;
             twitterAuthButton.classList.remove('connected');
@@ -574,6 +636,7 @@ async function checkTwitterAuthStatus() {
         console.error('Twitter認証状態の取得エラー:', error);
     }
 }
+
 // Cookieを設定する関数
 function setCookie(name, value, days) {
     const date = new Date();
@@ -637,12 +700,12 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// 「使い方」ボタンがクリックされたら、モーダルを表示
+// ボタンがクリックされたら、モーダルを表示
 if (howToUseBtn && howToUseModal) {
   howToUseBtn.addEventListener('click', (e) => {
     e.preventDefault(); 
 
-  
+    // オーバーレイを表示する処理がない 
     howToUseModal.style.display = 'block'; 
   });
 }
@@ -651,13 +714,67 @@ if (howToUseBtn && howToUseModal) {
 if (closeHowToUseModalBtn && howToUseModal) {
   closeHowToUseModalBtn.addEventListener('click', () => {
 
-    
+    // オーバーレイを非表示にする処理がない 
     howToUseModal.style.display = 'none';
   });
 }
 
+// 新しい「利用規約」ボタンの処理
+const termsOfServiceBtn = document.getElementById('termsOfServiceBtn');
+const operationModal = document.getElementById('operationModal');
+const modalOverlay = document.getElementById('modalOverlay'); 
 
+if (termsOfServiceBtn && operationModal && modalOverlay) {
+  termsOfServiceBtn.addEventListener('click', (e) => {
+    e.preventDefault(); // ボタンのデフォルト動作を防止
 
+    // 利用規約モーダルとオーバーレイを表示
+    operationModal.style.display = 'block';
+    modalOverlay.style.display = 'block';
+
+    // モーダルの位置を中央に調整 (初回表示時と同様のスタイル)
+    operationModal.style.top = '50%';
+    operationModal.style.left = '50%';
+    operationModal.style.transform = 'translate(-50%, -50%)';
+
+    // スクロールをトップに戻す
+    const modalBody = document.getElementById('modalBody');
+    if (modalBody) {
+        modalBody.scrollTop = 0;
+    }
+  });
+}
+
+// Twitter連携説明モーダルの開閉処理 
+document.addEventListener("DOMContentLoaded", () => {
+  const twitterInfoBtn = document.getElementById("twitterInfoBtn");
+  const twitterInfoModal = document.getElementById("twitterInfoModal");
+  const closeTwitterInfoModalBtn = document.getElementById("closeTwitterInfoModalBtn");
+  const modalOverlay = document.getElementById("modalOverlay");
+
+  if (twitterInfoBtn && twitterInfoModal && closeTwitterInfoModalBtn && modalOverlay) {
+    // 開く
+    twitterInfoBtn.addEventListener("click", () => {
+      twitterInfoModal.style.display = "block";
+      modalOverlay.style.display = "block";
+      document.body.style.overflow = "hidden"; // スクロール固定
+    });
+
+    // 閉じる（×ボタン）
+    closeTwitterInfoModalBtn.addEventListener("click", () => {
+      twitterInfoModal.style.display = "none";
+      modalOverlay.style.display = "none";
+      document.body.style.overflow = ""; // スクロール解除
+    });
+
+    // 閉じる（オーバーレイクリック）
+    modalOverlay.addEventListener("click", () => {
+      twitterInfoModal.style.display = "none";
+      modalOverlay.style.display = "none";
+      document.body.style.overflow = ""; // スクロール解除
+    });
+  }
+});
 
 // アプリ起動時にチェック
 checkTwitterAuthStatus();
