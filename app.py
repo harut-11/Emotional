@@ -1,8 +1,9 @@
-
 import os
 import json
 import io
 import datetime
+# timedelta をインポート
+from datetime import timedelta
 import uuid
 from flask import Flask, request, jsonify, render_template, send_from_directory, session, redirect, url_for
 from dotenv import load_dotenv 
@@ -57,6 +58,17 @@ class EmotionRecord(db.Model):
     image_path = db.Column(db.String(255), nullable=True) # 保存された画像ファイル名
     created_at = db.Column(db.DateTime, default=datetime.datetime.now)
 
+
+# cooldown_ends_at を削除し、最後に利用した日時を記録する
+class UsageTracker(db.Model):
+    # id=1 のレコードのみを使用するシングルトンとして扱う
+    id = db.Column(db.Integer, primary_key=True) 
+    # remaining_uses は 10 から 0 まで
+    remaining_uses = db.Column(db.Integer, nullable=False, default=10)
+    # 最後にAPIを利用した日時 (またはリセットされた日時)
+    last_used_at = db.Column(db.DateTime, nullable=False, default=datetime.datetime.now)
+
+
 # アプリケーションコンテキスト内でデータベースを初期化
 with app.app_context():
     db.create_all()
@@ -79,7 +91,7 @@ def get_twitter_v2_client():
             consumer_secret=TWITTER_API_SECRET,
             access_token=session['access_token'],
             access_token_secret=session['access_token_secret'],
-            wait_on_rate_limit=True # レート制限時に待機するオプションを追加
+            wait_on_rate_limit=True 
         )
     return None
 
@@ -112,7 +124,6 @@ def twitter_callback():
         user = api.verify_credentials()
         session['screen_name'] = user.screen_name
         
-        # request_tokenを削除
         session.pop('request_token', None)
 
         return render_template('auth_success.html', screen_name=user.screen_name)
@@ -165,10 +176,55 @@ def post_to_twitter(text, happiness, anger, image_file=None):
 @app.route('/analyze_emotion', methods=['POST'])
 def analyze_emotion():
     """テキストと画像をGeminiで分析し、感情をDBに記録するAPI"""
-    
+
+    # 先にフォームデータを取得
     text_content = request.form.get('text_content', '')
     image_file = request.files.get('file')
     should_post_to_twitter = request.form.get('post_to_twitter', 'false').lower() == 'true'
+
+    now = datetime.datetime.now()
+    tracker = None # トラッカー変数を初期化
+    
+    # トグルがONの時だけ、API利用回数制限をチェック 
+    if should_post_to_twitter:
+        
+        # トラッカーを取得 (id=1 に固定)
+        tracker = UsageTracker.query.get(1)
+        if not tracker:
+            # 初回利用時: デフォルト値で作成
+            tracker = UsageTracker(id=1, remaining_uses=10, last_used_at=now)
+            db.session.add(tracker)
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({"error": f"利用回数トラッカーの初期化に失敗しました: {e}"}), 500
+        
+        # 最後に使用してから24時間経過しているかチェック
+        reset_time = tracker.last_used_at + timedelta(hours=24)
+        
+        if now >= reset_time:
+            # 24時間以上経過した場合、回数を10にリセット
+            tracker.remaining_uses = 10
+            # last_used_at は、このAPI利用が成功した際に 'now' で上書きされる
+            
+            db.session.add(tracker)
+            try:
+                # リセット処理はAPIの成否に関わらずコミットする
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({"error": f"利用回数トラッカーのリセットに失敗しました: {e}"}), 500
+
+        # 3. 利用回数をチェック 
+        if tracker.remaining_uses <= 0:
+            # 回数が0のまま
+            reset_time_str = reset_time.strftime('%Y-%m-%d %H:%M:%S')
+            return jsonify({
+                "error": "API利用回数の上限（10回）に達しました。",
+                "message": f"利用回数は {reset_time_str} （最終利用から24時間後）にリセットされます。"
+            }), 429 
+    
     if not text_content and not image_file:
         return jsonify({"error": "テキストまたは画像が必要です。"}, 400)
 
@@ -176,7 +232,7 @@ def analyze_emotion():
     saved_image_path = None
     save_path = None
     if image_file:
-        # ファイル名をUUIDで安全に生成
+        # 画像保存処理
         ext = image_file.filename.split('.')[-1]
         if ext.lower() not in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
              return jsonify({"error": "サポートされていない画像形式です。"}, 400)
@@ -186,7 +242,8 @@ def analyze_emotion():
         image_file.save(save_path)
         saved_image_path = filename
 
-    # 2. Gemini APIのプロンプトとコンテンツリストの準備
+
+    # 2. Gemini APIのプロンプト
     prompt = (
         "あなたは、人間の感情を深く理解する心理分析の専門家です。\n"
         "提供されたテキストと画像を総合的に分析し、書き手の「幸福度（happiness）」と「怒り（anger）」のレベルを0.0から10.0の範囲（浮動小数点数）で正確に評価してください。\n"
@@ -223,23 +280,22 @@ def analyze_emotion():
             return jsonify({"error": "画像の読み込みに失敗しました。"}, 500)
 
     try:
-        # 3. Gemini API呼び出し
+        # Gemini API呼び出し
         response = client.models.generate_content(
             model=MODEL_NAME,
             contents=contents,
             config={"response_mime_type": "application/json"}
         )
         
-        # 4. 感情値の抽出とバリデーション
+        # 感情値の抽出とバリデーション
         emotion_data = json.loads(response.text)
         happiness = float(emotion_data.get('happiness', 0.0))
         anger = float(emotion_data.get('anger', 0.0))
         
-        # 値の範囲を0.0から10.0にクリップ
         happiness = max(0.0, min(10.0, happiness))
         anger = max(0.0, min(10.0, anger))
         
-        # 5. DBへの保存
+        # DBへの保存
         new_record = EmotionRecord(
             text_content=text_content,
             happiness=happiness,
@@ -247,12 +303,44 @@ def analyze_emotion():
             image_path=saved_image_path
         )
         db.session.add(new_record)
+        
+        
+        # トグルがONの時だけ、回数を消費 
+        remaining_uses_to_return = None # フロントに返す残回数を初期化
+
+        if should_post_to_twitter:
+         
+            # データベースから最新を取得してロック 
+            tracker_to_update = UsageTracker.query.get(1)
+
+            if tracker_to_update: # trackerがNoneでないことを確認
+                # 回数を減らし、最終利用日時を 'now' (このリクエストの開始時刻) に更新
+                tracker_to_update.remaining_uses -= 1
+                tracker_to_update.last_used_at = now
+                
+                db.session.add(tracker_to_update)
+                remaining_uses_to_return = tracker_to_update.remaining_uses
+            else:
+                # トラッカーが見つからなかった場合
+                remaining_uses_to_return = 0 
+        
+        else:
+            # トグルがOFFの場合、回数は消費しない
+            # ただし、フロントに現在の残回数を通知するためにDBから読み取る
+            current_tracker = UsageTracker.query.get(1)
+            if current_tracker:
+                remaining_uses_to_return = current_tracker.remaining_uses
+            else:
+                remaining_uses_to_return = 10 # まだトラッカーがない場合はデフォルト10
+
+        
+        
         db.session.commit()
 
-        # 6. Twitterへの自動投稿
+        # Twitterへの自動投稿
         twitter_post_success = False
+        
         if 'access_token' in session and should_post_to_twitter:
-            # post_to_twitterにファイルの保存パスを渡す
             twitter_post_success = post_to_twitter(text_content, happiness, anger, save_path if saved_image_path else None)
         
         return jsonify({
@@ -260,14 +348,16 @@ def analyze_emotion():
             "happiness": happiness,
             "anger": anger,
             "record_id": new_record.id,
-            "twitter_posted": twitter_post_success 
+            "twitter_posted": twitter_post_success,
+            "remaining_uses": remaining_uses_to_return 
         })
 
     except Exception as e:
         print(f"Gemini API呼び出しエラー: {e}")
         
-        db.session.rollback() 
-        # エラー発生時は保存した画像ファイルを削除
+        db.session.rollback()  
+                                # EmotionRecord も tracker の変更もロールバックする
+        
         if saved_image_path and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path)):
              os.remove(os.path.join(app.config['UPLOAD_FOLDER'], saved_image_path))
         return jsonify({"error": "感情分析中にエラーが発生しました。入力内容を確認してください。またはTwitter APIキーを確認してください。"}, 500)
@@ -300,7 +390,7 @@ def predict_emotion():
     """
     過去の感情履歴に基づき、Gemini APIで未来の感情傾向とアドバイスを予測する
     """
-    # 1. 過去の感情データを取得 (直近30件)
+    # 過去の感情データを取得 (直近30件)
     # 時系列分析に適した形式でデータを取得
     records = EmotionRecord.query.order_by(EmotionRecord.created_at.desc()).limit(30).all()
     
@@ -319,7 +409,7 @@ def predict_emotion():
 
     history_json = json.dumps(history_data, ensure_ascii=False)
 
-    # 2. Gemini API用のプロンプトを作成
+    # Gemini API用のプロンプトを作成
     prompt = (
         "あなたは、時系列データと人間の感情パターンを分析するプロのデータサイエンティスト兼心理カウンセラーです。\n"
         "提供された過去の感情履歴データ（JSON形式）を分析し、**今後3日以内**に予測されるユーザーの「感情の天気予報」をJSON形式で出力してください。\n"
@@ -345,7 +435,7 @@ def predict_emotion():
         f"{history_json}"
     )
 
-    # 3. Gemini APIの呼び出し
+    # Gemini APIの呼び出し
     try:
         response = client.models.generate_content(
             model=MODEL_NAME,
@@ -353,7 +443,7 @@ def predict_emotion():
             config={"response_mime_type": "application/json"}
         )
 
-        # 4. JSONレスポンスのパース
+        # JSONレスポンスのパース
         prediction_data = json.loads(response.text)
         
         # 簡易的なバリデーション
@@ -382,22 +472,42 @@ def serve_image(filename):
 # --- Twitter連携状態チェックAPI ---
 @app.route("/auth/status")
 def auth_status():
-    """フロントエンドから呼び出されるTwitter認証状態チェック"""
+    """フロントエンドから呼び出されるTwitter認証状態チェックと残り回数の取得"""
+    
+    # 残り回数を計算 (DBは更新しない)
+    remaining_uses_to_return = 10 # デフォルト
+    now = datetime.datetime.now()
+    tracker = UsageTracker.query.get(1)
+
+    if tracker:
+        reset_time = tracker.last_used_at + timedelta(hours=24)
+        
+        if now >= reset_time:
+            # 24時間以上経過している場合、表示上は10回
+            remaining_uses_to_return = 10
+        else:
+            # 24時間経過していない場合、現在のDBの値
+            remaining_uses_to_return = tracker.remaining_uses
+            
+    else:
+        # トラッカーがまだ作成されていない場合
+        remaining_uses_to_return = 10
+
+
+    # 認証状態をチェック
     if 'access_token' in session and 'screen_name' in session:
         return jsonify({
             "authenticated": True,
-            "screen_name": session["screen_name"]
+            "screen_name": session["screen_name"],
+            "remaining_uses": remaining_uses_to_return 
         })
     else:
-        return jsonify({"authenticated": False})
+        return jsonify({
+            "authenticated": False,
+            "remaining_uses": remaining_uses_to_return 
+        })
 
 
-if __name__ == '__main__':
-    # データベースの初期化
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
-    
 
 if __name__ == '__main__':
     import threading
@@ -406,11 +516,11 @@ if __name__ == '__main__':
     port = 5000
     url = f"http://127.0.0.1:{port}"
 
-    # Flaskが起動した直後にブラウザを開く（別スレッドで実行）
+    # Flaskが起動した直後にブラウザを開く
     threading.Timer(1.0, lambda: webbrowser.open_new(url)).start()
 
     # データベースの初期化
     with app.app_context():
         db.create_all()
 
-    app.run(debug=True, port=port)
+    app.run(debug=False, port=port)
