@@ -767,12 +767,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.style.overflow = ""; // スクロール解除
     });
 
-    // 閉じる（オーバーレイクリック）
-    modalOverlay.addEventListener("click", () => {
-      twitterInfoModal.style.display = "none";
-      modalOverlay.style.display = "none";
-      document.body.style.overflow = ""; // スクロール解除
-    });
   }
 });
 
@@ -782,3 +776,4 @@ checkTwitterAuthStatus();
 
 // アプリケーションを起動
 initApp();
+
