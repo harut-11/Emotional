@@ -767,6 +767,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.style.overflow = ""; // スクロール解除
     });
 
+    
   }
 });
 
@@ -776,4 +777,3 @@ checkTwitterAuthStatus();
 
 // アプリケーションを起動
 initApp();
-
