@@ -18,7 +18,7 @@
         <h2>1. 本サービスについて</h2>
         <p>・本サービス「感情アーカイブ」は、ユーザーが投稿したテキストおよび画像を、AI（Google Gemini API）を用いて分析し、感情データを記録・視覚化するサービスです。</p>
         <p>・また、記録されたデータに基づき、将来の感情傾向の予測や、Twitter（X）への投稿機能を提供します。</p>
-        <p><b>【重要】Twitter（X）への自動投稿機能は、Twitter（X）社のAPI利用規約や技術的な制限に基づき、投稿回数や内容に制限がかかる場合や、予告なく機能が停止する場合があります。</b></p>
+        <p><b>【重要】Twitter（X）への自動投稿機能は、短期間の連続利用を防ぐためのアプリ独自の利用回数制限（最後に利用してから24時間以内に10回まで）が適用されます。上限に達した場合、「Twitterに自動投稿」のスイッチは自動的にOFF（操作不能）になり、24時間が経過し制限がリセットされるまで利用できません。また、それとは別にTwitter（X）社のAPI利用規約や技術的な制限（月間投稿上限など）に基づき、投稿回数や内容に制限がかかる場合や、予告なく機能が停止する場合があります。</b></p>
 
         <h2>2. 利用環境について</h2>
         <p>・本サービスの利用には、安定したインターネット接続環境が必要です。</p>
@@ -53,15 +53,13 @@
         <p>・運営者は、必要と判断した場合、ユーザーの承諾を得ることなく本規約を変更できるものとします。</p>
         <p>・変更後の規約は、本サービス上に表示された時点から効力を生じるものとします。</p>
 
-        <h2>7.お問い合わせについて</h2>
-        <p>・本サービスに関するお問い合わせは、はるとまで</p>
     </div>
     <div class="modal-footer">
       <button id="closeModalBtn" style="display:none;">閉じる</button>
     </div>
   </div>
 </div>
-<button id="howToUseBtn" class="operation-button">使用方法</button>
+
 <div id="howToUseModal" class="modal modal-left" style="display:none;">
   <div class="modal-content">
     <span id="closeHowToUseModalBtn" class="close-how-to-use">&times;</span>
@@ -95,6 +93,8 @@
   </div>
 </div>
     <div class="container">
+        <button id="howToUseBtn" class="operation-button">使用方法</button>
+<button id="termsOfServiceBtn" class="operation-button">利用規約</button>
         <h1>
             <img src="static/image/AI.png" alt="AI icon" class="h1-icon">
             感情アーカイブ
@@ -120,11 +120,13 @@
                     
                     
                     <div class="twitter-post-toggle-section">
+                        
                         <label for="postToTwitterToggle" class="toggle-label">
                             Twitterに自動投稿
                         </label>
                         <input type="checkbox" id="postToTwitterToggle" checked>
                         <label for="postToTwitterToggle" class="switch"></label>
+                       <button id="twitterInfoBtn" class="toggle-info-btn">？</button>
                     </div>
                     
                     <h2>新しい感情の記録</h2>
@@ -166,7 +168,68 @@
                     </ul>
             </div>
         </div>
+
+                    <!-- ▼ Twitter連携の説明モーダル ▼ -->
+        <div id="twitterInfoModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="closeTwitterInfoModalBtn" class="close-how-to-use">&times;</span>
+            <h1>Twitter連携について</h1>
+            <div class="modal-body">
+            
+            <h2>この機能でできること</h2>
+            <ul>
+                <li>「感情を分析して記録する」と同時に、あなたのTwitter（X）アカウントに自動で投稿できます。</li>
+                <li>投稿される内容は「日記テキスト」と「感情の要約」です。</li>
+            </ul>
+
+            <h2>注意事項</h2>
+            <ul>
+                <li>この機能を利用するには、Twitterアカウントとの連携（認証）が必要です。</li>
+                <li>Twitter社のAPI制限により、投稿回数や内容が制限される場合があります。</li>
+                <li>自動投稿は、このスイッチでいつでもオン・オフを切り替えられます。</li>
+            </ul>
+
+            <h2>データの扱いについて</h2>
+            <ul>
+                <li>本サービスはTwitterのパスワードを保存しません。</li>
+                <li>認証情報（アクセストークン等）は一時的にセッションに保存され、投稿処理のみに使用されます。</li>
+            </ul>
+
+            <h2>Twitter API連携の方法</h2>
+            <ol>
+                <li>画面内の <strong>「Twitterアカウントを連携する」</strong> ボタンをクリックします。</li>
+                <li>Twitterのログイン画面が開くので、普段利用しているアカウントでログインしてください。</li>
+                <li>「このアプリにアクセスを許可しますか？」と表示されたら、<strong>「許可する」</strong> を選択します。</li>
+                <li>認証が完了すると、このアプリに自動的に戻り、連携状態が「連携済み ✔」と表示されます。</li>
+                <li>これで準備完了です。自動投稿スイッチをONにすれば、記録時にTwitterにも同時投稿されます。</li>
+            </ol>
+
+            <h2>トラブルシューティング</h2>
+            <ul>
+                <li>認証に失敗した場合は、ブラウザのCookieを削除して再度お試しください。</li>
+                <li>Twitter連携済みのはずなのに投稿されない場合、API制限またはトークンの期限切れが考えられます。再連携してください。</li>
+            </ul>
+
+            <h2>自身のTwitterと連携方法</h2>
+            <h2>TwitterのAPIの取得</h2>
+            <ul>
+                <li>はっきり言うとこれはすごくめんどくさい…</l1>
+                <li>自身のTwitterと連携するには二つのAPIキーが必要でありその二つは自身で取得しなければなりません。</li>
+                <li>
+                    Twitter（X）にログインDeveloper Portalアクセスして貰う必要があります。参考→
+                    <a href="https://wporz.com/twitter-api-regist/#1" target="_blank">詳しく</a>
+                </li>
+            </ul>
+            <h2>キーを代入</h2>
+            <ul>
+                <li>envファイルを作成（github参照）</li>
+                <img src="static\image\tikarakososeigi.png" alt="キー画像" style="width:450px; height:auto;">
+                <li>画像の通りに代入したら完了！</li>
+            </ul>
+
+            </div>
         </div>
+    </div>
 
     <script src="static/script.js"></script>
 </body>
