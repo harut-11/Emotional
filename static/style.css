@@ -91,10 +91,11 @@ h2 {
 .tab-content.active {
     display: block;
 }
+/*使用方法ボタン*/
 #howToUseBtn {
-    position: fixed;
-    top: 10px;
-    left: 10px;
+    /*position: fixed;*/
+    top: 0px;
+    left: 0px;
     z-index: 8; /* オーバーレイ(9)より下 */
     background-color: #3498db;
     color: rgb(255, 255, 255);
@@ -112,6 +113,31 @@ h2 {
 #howToUseBtn:hover {
     background-color: #2980b9;
 }
+
+/*利用規約ボタン*/
+#termsOfServiceBtn{
+    /*position: fixed;*/
+    top: 10px;
+    left: 160px;
+    z-index: 8; /* オーバーレイ(9)より下 */
+    background-color: #439433;
+    color: rgb(255, 255, 255);
+    border: none;
+    border-radius: 8px;
+    width: 140px;
+    height: 40px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+}
+
+#termsOfServiceBtn:hover {
+    background-color: #1a5335;
+}
+
+
 .close-how-to-use {
   position: absolute;
   top: 10px;      
@@ -559,7 +585,6 @@ h2 {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgb(255, 255, 255);
   border: 1px solid #ccc;
   padding: 15px;
   z-index: 1000;
@@ -572,6 +597,8 @@ h2 {
   
   
 }
+
+
 #modalBody h2 {
     color: #000; 
     
@@ -651,6 +678,102 @@ h2 {
 .operation-steps li {
     margin-bottom: 15px; /* 各ステップの間に余白 */
 }
+
+/* --- モーダル個別の背景色設定 --- */
+#operationModal {
+    background-color: rgb(255, 255, 255);
+}
+
+
+#howToUseModal {
+    background-color: rgba(255, 255, 255, 0.527);
+}
+
+
+.info-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    background-color: #ffffff; /* 背景を白に変更 */
+    color: #1da1f2; /* 文字色をTwitterブルーに */
+    border: 1.5px solid #1da1f2; /* 枠線を追加して視認性を確保 */
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.info-icon:hover {
+    background-color: #1da1f2; /* ホバー時に反転 */
+    color: #ffffff;
+}
+/* --- トグルスイッチ横の「？」ボタンのスタイル --- */
+.toggle-info-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    margin-left: 10px;  /* ラベルとの間隔 */
+    padding: 0;
+    line-height: 1;
+    transition: background-color 0.3s;
+}
+
+.toggle-info-btn:hover {
+    background-color: #2980b9;
+}
+
+/* Twitter連携モーダルを大きく白背景に */
+#twitterInfoModal.modal {
+    background-color: #ffffff; /* 完全な白背景 */
+    border: 1px solid #ccc;
+    padding: 20px;
+    width: 90%;       /* 幅を画面に合わせて大きく */
+    max-width: 1000px; /* 最大幅 */
+    height: 80%;      /* 高さも画面に合わせて大きく */
+    max-height: 850px; /* 最大高さ */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    overflow-y: auto;  /* 内容が多い場合スクロール可能 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: fixed;
+    z-index: 1000;
+}
+
+/* モーダルのオーバーレイ（背景） */
+#twitterInfoModal.modal + .modal-overlay {
+    background-color: rgba(0,0,0,0.5); /* 黒で少し透過 */
+    z-index: 999;
+}
+
+/* モーダル内のコンテンツをフレックスで縦方向に */
+#twitterInfoModal .modal-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* スクロール可能なモーダル本文 */
+#twitterInfoModal .modal-body {
+    overflow-y: auto;
+    flex-grow: 1;
+    padding-right: 10px;
+}
+
 /* --- レスポンシブデザイン --- */
 @media (max-width: 600px) {
     .container {
@@ -695,5 +818,4 @@ h2 {
         margin-right: 10px;
     }
 }
-
 
